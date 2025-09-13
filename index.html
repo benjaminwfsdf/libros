@@ -18,7 +18,7 @@
       radial-gradient(1400px 700px at 10% -10%, rgba(255,45,139,.20), transparent 60%),
       radial-gradient(900px 600px at 100% 0%, rgba(255,140,201,.18), transparent 70%),
       linear-gradient(180deg,var(--bg),#170014 40%,var(--bg2));
-    position:relative; overflow-x:hidden;
+    overflow-x:hidden;
   }
   .sparkles{pointer-events:none; position:fixed; inset:0; z-index:0; opacity:.85;
     background-image:
@@ -109,6 +109,7 @@
         <div class="actions">
           <button class="btn" id="exportBtnPanel">Exportar</button>
           <label class="btn secondary">Importar<input id="importFilePanel" type="file" accept="application/json" hidden></label>
+          <button class="btn secondary" id="resetApp">Reset app</button>
         </div>
       </article>
     </div>
@@ -124,7 +125,7 @@
           <div class="col-2">
             <label for="isbn">ISBN (puedes escanear)</label>
             <div style="display:flex; gap:8px"><input id="isbn" class="input" placeholder="978... (13 dígitos)" style="flex:1"/><button type="button" class="btn secondary" id="scanBtn">Escanear</button></div>
-            <small style="color:#ffcae6;opacity:.9">Consejo: usa HTTPS (GitHub Pages) para que la cámara funcione en el móvil.</small>
+            <small style="color:#ffcae6;opacity:.9">Tip: usa la URL https de Vercel para que la cámara funcione.</small>
           </div>
           <div class="col-2"><label for="status">Estado</label>
             <select id="status" class="input"><option value="to-read">Por leer</option><option value="reading">Leyendo</option><option value="read">Leído</option></select>
@@ -193,7 +194,8 @@
       <button class="iconbtn" id="closeScan" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
     </div>
     <div class="modal-body" style="grid-template-columns:1fr">
-      <video id="video" style="width:100%; border-radius:12px; background:#000" playsinline></video>
+      <!-- IMPORTANTE: autoplay + muted + playsinline para iOS -->
+      <video id="video" autoplay muted playsinline webkit-playsinline style="width:100%; border-radius:12px; background:#000"></video>
       <p style="margin:8px 0 0; color:#ffd9ec">Apunta al código de barras (ISBN-13). Se rellenará automáticamente.</p>
     </div>
     <div class="modal-foot" style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px">
@@ -203,12 +205,13 @@
   </div>
 </div>
 
-<!-- ZXing para escanear códigos -->
+<!-- ZXing -->
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 <script>
 /* ===== CONFIG ===== */
-const SHEETS_URL = "https://script.google.com/macros/s/REEMPLAZA_AQUI/exec"; // <- pega tu URL de Apps Script
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwQKismwlGoG2UpKFG5EPlkyLgPkPnDl--hvYMdfBhu_EV6cRaX8NoBCXN9N5MG9DJ5/exec"; // <- pega tu URL de Apps Script
 const KEY = "book-tracker-v1";
+
 /* ===== Utils ===== */
 const $ = s => document.querySelector(s); const $$ = s => Array.from(document.querySelectorAll(s));
 let state = { books: load(), route: location.hash || "#/panel", viewFilter: "all", q:"", selectedId:null };
@@ -301,9 +304,10 @@ $("#closeModal").addEventListener("click",()=>$("#modal").classList.remove("acti
 $("#saveNotes").addEventListener("click",()=>{ const id=state.selectedId; if(!id) return; updateBook(id,{notes:$("#modalNotes").value}); $("#modal").classList.remove("active"); toast("Notas guardadas"); });
 $("#markRead").addEventListener("click",()=>{ const id=state.selectedId; if(!id) return; const b=state.books.find(x=>x.id===id); updateBook(id,{status:"read",rating:b.rating||5}); $("#modal").classList.remove("active"); if(state.route.startsWith("#/library")) renderLibrary(); toast("Marcado como leído"); });
 
-/* ===== Export/Import ===== */
+/* ===== Export/Import/Reset ===== */
 $("#exportBtnPanel").addEventListener("click",exportJson); $("#importFilePanel").addEventListener("change",importJson);
 $("#exportBtn").addEventListener("click",exportJson); $("#importFile").addEventListener("change",importJson);
+$("#resetApp").addEventListener("click",()=>{ if(confirm("¿Borrar TODOS los libros en este dispositivo?")){ localStorage.removeItem(KEY); location.reload(); } });
 function exportJson(){ const blob=new Blob([JSON.stringify(state.books,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="mi_biblioteca.json"; document.body.appendChild(a); a.click(); a.remove(); }
 function importJson(e){ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ state.books=arr.map(x=>({id:x.id||uid(), title:String(x.title||""), author:String(x.author||""), isbn:x.isbn||"", status:["to-read","reading","read"].includes(x.status)?x.status:"to-read", rating:Number(x.rating||0), notes:x.notes||"", cover:x.cover||""})); persist(); renderRoute(); toast("Importado ✔"); } else alert("El JSON no contiene un arreglo válido"); }catch{ alert("No se pudo importar el JSON"); } }; r.readAsText(f); }
 
@@ -321,24 +325,156 @@ function renderStats(){ const area=$("#statsArea"); const total=state.books.leng
 /* ===== Buscador ===== */
 $("#q").addEventListener("input",e=>{ state.q=e.target.value; renderLibrary(); });
 
-/* ===== Escáner (ZXing) ===== */
-let codeReader,currentDeviceId=null; const scanModal=$("#scanModal"); const videoEl=$("#video");
-$("#scanBtn")?.addEventListener("click",openScan); $("#closeScan")?.addEventListener("click",stopScan); $("#stopScan")?.addEventListener("click",stopScan); $("#flipCam")?.addEventListener("click",flipCamera);
-async function openScan(){ scanModal.classList.add("active"); if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader();
-  const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
-  const back=devices.find(d=>/back|rear|trás|trasera|environment/i.test(d.label))||devices[0]; currentDeviceId=back?.deviceId; startDecode(); }
-async function startDecode(){ if(!currentDeviceId) return;
-  try{ await codeReader.decodeFromVideoDevice(currentDeviceId, videoEl, async (result, err)=>{ if(result){ const isbnRaw=result.getText().replace(/[^0-9Xx]/g,""); if(isbnRaw.length>=10){ await autorrellenarPorISBN(isbnRaw); stopScan(); } } }); }
-  catch(e){ console.warn("Cámara:",e); alert("No se pudo iniciar la cámara."); stopScan(); } }
-async function flipCamera(){ const devices=await ZXing.BrowserCodeReader.listVideoInputDevices(); if(!devices?.length) return;
-  const idx=devices.findIndex(d=>d.deviceId===currentDeviceId); const next=devices[(idx+1)%devices.length]; currentDeviceId=next.deviceId; codeReader?.reset(); startDecode(); }
-function stopScan(){ codeReader?.reset(); scanModal.classList.remove("active"); }
-async function autorrellenarPorISBN(isbn){ $("#isbn").value=isbn; const meta=await lookupByIsbn(isbn);
-  if(meta){ if(meta.title) $("#title").value=meta.title; if(meta.author) $("#author").value=meta.author;
-    const cover=meta.cover||await fetchCover({title:meta.title, author:meta.author, isbn}); $("#isbn").dataset.coverPreview=cover||""; toast("ISBN detectado ✔"); }
-  else alert("No se encontraron datos para ese ISBN."); }
-async function lookupByIsbn(isbn){ try{ const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`); const j=await r.json(); const k=j[`ISBN:${isbn}`]; if(k){ return {title:k.title||"", author:k.authors?.[0]?.name||"", cover:k.cover?.large||""}; } }catch{}
-  try{ const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`); const j=await r.json(); const it=j.items?.[0]; if(it){ const vi=it.volumeInfo||{}; const img=vi.imageLinks; return {title:vi.title||"", author:(vi.authors?.[0])||"", cover:(img?.thumbnail||img?.smallThumbnail||"").replace("http://","https://").replace("&edge=curl","")}; } }catch{} return null; }
+/* ===== Escáner robusto (Vercel/iOS/Android) ===== */
+let codeReader=null, currentStream=null, deviceList=[], currentDeviceIndex=-1, useBack=true;
+const scanModal=$("#scanModal"), videoEl=$("#video");
+
+$("#scanBtn")?.addEventListener("click", openScan);
+$("#closeScan")?.addEventListener("click", stopScan);
+$("#stopScan")?.addEventListener("click", stopScan);
+$("#flipCam")?.addEventListener("click", async ()=>{
+  // alterna por índice si tenemos lista; si no, alterna facingMode
+  if(deviceList.length>1){
+    currentDeviceIndex = (currentDeviceIndex + 1) % deviceList.length;
+    await startCamera({byDeviceId:true});
+  }else{
+    useBack = !useBack;
+    await startCamera({byDeviceId:false});
+  }
+  await startDecoding();
+});
+
+async function openScan(){
+  if(!(location.protocol==='https:' || location.hostname==='localhost')){
+    alert('Abre la app en HTTPS (Vercel) para usar la cámara.');
+    return;
+  }
+  if(!navigator.mediaDevices?.getUserMedia){ alert('Tu navegador no soporta cámara.'); return; }
+
+  scanModal.classList.add("active");
+  try{
+    // lista de cámaras (si el usuario ya dio permiso, obtendrá labels)
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      deviceList = devices.filter(d=>d.kind==='videoinput');
+      // intenta arrancar con la trasera si existe
+      const backIndex = deviceList.findIndex(d => /back|rear|environment/i.test(d.label));
+      currentDeviceIndex = backIndex >= 0 ? backIndex : 0;
+    }catch{}
+
+    await startCamera({byDeviceId: currentDeviceIndex>=0});
+    await startDecoding();
+  }catch(err){
+    console.warn('openScan error:', err);
+    alert('No se pudo abrir la cámara. Revisa permisos del sitio.\n'+(err.message||err));
+    stopScan();
+  }
+}
+
+function stopScan(){
+  stopCamera();
+  try{ codeReader?.reset(); }catch{}
+  scanModal.classList.remove("active");
+}
+
+function stopCamera(){
+  try{
+    if(currentStream){
+      currentStream.getTracks().forEach(t => t.stop());
+      currentStream = null;
+    }
+    videoEl.srcObject = null;
+    videoEl.pause?.();
+  }catch{}
+}
+
+async function startCamera({byDeviceId}={}){
+  stopCamera();
+
+  videoEl.setAttribute('playsinline','true');
+  videoEl.setAttribute('autoplay','true');
+  videoEl.setAttribute('muted','true');
+  videoEl.setAttribute('webkit-playsinline','true');
+  videoEl.muted = true;
+
+  const tries = [];
+
+  if(byDeviceId && deviceList[currentDeviceIndex]){
+    tries.push({ video: { deviceId: { exact: deviceList[currentDeviceIndex].deviceId } } });
+  }
+
+  // fallback por facingMode
+  tries.push({ video: { facingMode: { exact: useBack ? 'environment' : 'user' } } });
+  tries.push({ video: { facingMode: useBack ? 'environment' : 'user' } });
+  tries.push({ video: true });
+
+  let lastErr;
+  for(const constraints of tries){
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      currentStream = stream;
+      videoEl.srcObject = stream;
+      await videoEl.play();
+      return;
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr || new Error('Sin acceso a la cámara');
+}
+
+async function startDecoding(){
+  if(!codeReader) codeReader = new ZXing.BrowserMultiFormatReader();
+  try{ codeReader.reset(); }catch{}
+
+  // Decodifica continuamente desde el <video>
+  await codeReader.decodeFromVideoElementContinuously(videoEl, async (result, err) => {
+    if(result){
+      const isbnRaw = String(result.getText()||'').replace(/[^0-9Xx]/g,'');
+      if(isbnRaw.length >= 10){
+        try{
+          await autorrellenarPorISBN(isbnRaw);
+          toast("ISBN detectado ✔");
+          stopScan();
+        }catch(e){
+          console.warn('autorrellenar error:', e);
+          alert('Se leyó el código, pero no se pudo completar automáticamente.');
+        }
+      }
+    }
+    // err NotFoundException => significa que todavía no hay código visible; ignorar.
+  });
+}
+
+/* ===== Autorrellenar por ISBN ===== */
+async function autorrellenarPorISBN(isbn){
+  $("#isbn").value = isbn;
+  const meta = await lookupByIsbn(isbn);
+  if(meta){
+    if(meta.title) $("#title").value = meta.title;
+    if(meta.author) $("#author").value = meta.author;
+    const cover = meta.cover || await fetchCover({title: meta.title, author: meta.author, isbn});
+    $("#isbn").dataset.coverPreview = cover || "";
+  }else{
+    alert("No se encontraron datos para ese ISBN.");
+  }
+}
+async function lookupByIsbn(isbn){
+  try{
+    const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+    const j=await r.json(); const k=j[`ISBN:${isbn}`];
+    if(k){
+      return {title:k.title||"", author:k.authors?.[0]?.name||"", cover:k.cover?.large||""};
+    }
+  }catch{}
+  try{
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`);
+    const j=await r.json(); const it=j.items?.[0];
+    if(it){
+      const vi=it.volumeInfo||{}; const img=vi.imageLinks||{};
+      return {title:vi.title||"", author:(vi.authors?.[0])||"", cover:(img.thumbnail||img.smallThumbnail||"").replace("http://","https://").replace("&edge=curl","")};
+    }
+  }catch{}
+  return null;
+}
 
 /* ===== Guardar ===== */
 $("#addBtn").addEventListener("click",async (e)=>{ e.preventDefault();
@@ -347,12 +483,17 @@ $("#addBtn").addEventListener("click",async (e)=>{ e.preventDefault();
   if(!title||!author){ alert("Título y autor son obligatorios"); return; }
   const cover=$("#isbn").dataset.coverPreview||await fetchCover({title,author,isbn});
   const book={id:uid(), title, author, isbn, status, rating, notes, cover};
-  addBook(book); sendToSheets(book).then(()=>toast("Enviado a Sheets ✔")).catch(()=>toast("Guardado local (no se pudo enviar a Sheets)"));
+  addBook(book);
+  sendToSheets(book).then(()=>toast("Enviado a Sheets ✔")).catch(()=>toast("Guardado local (no se pudo enviar a Sheets)"));
   $("#bookForm").reset(); delete $("#isbn").dataset.coverPreview; go("#/library/all");
 });
-async function sendToSheets(book){ if(!SHEETS_URL || SHEETS_URL.includes("REEMPLAZA")) return;
+
+async function sendToSheets(book){
+  if(!SHEETS_URL || SHEETS_URL.includes("REEMPLAZA")) return;
   const payload={action:"add", book:{...book, createdAt:new Date().toISOString()}};
-  const r=await fetch(SHEETS_URL,{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload), mode:"cors"}); if(!r.ok) throw new Error("Sheets no OK"); }
+  const r=await fetch(SHEETS_URL,{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload), mode:"cors"});
+  if(!r.ok) throw new Error("Sheets no OK");
+}
 
 /* ===== Start ===== */
 renderRoute();
