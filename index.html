@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Mi Biblioteca • Rosa</title>
+<meta name="theme-color" content="#ff2d8b"/>
+<style>
+  :root{
+    --bg:#12010f; --bg2:#1a0a18; --card:#241220; --muted:#ffd9ec; --txt:#fff8fb;
+    --brand:#ff2d8b; --brand2:#ff8cc9; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+    --radius:18px; --shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; color:var(--txt); font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial;
+    background:
+      radial-gradient(1400px 700px at 10% -10%, rgba(255,45,139,.20), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(255,140,201,.18), transparent 70%),
+      linear-gradient(180deg,var(--bg),#170014 40%,var(--bg2));
+    position:relative; overflow-x:hidden;
+  }
+  .sparkles{pointer-events:none; position:fixed; inset:0; z-index:0; opacity:.85;
+    background-image:
+      radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,.35), transparent 60%),
+      radial-gradient(1.5px 1.5px at 30% 80%, rgba(255,200,240,.35), transparent 60%),
+      radial-gradient(2px 2px at 70% 40%, rgba(255,255,255,.35), transparent 60%),
+      radial-gradient(1.5px 1.5px at 85% 70%, rgba(255,200,240,.35), transparent 60%);
+    animation: twinkle 6s linear infinite;
+  }
+  @keyframes twinkle{0%,100%{filter:brightness(1)} 50%{filter:brightness(1.35)}}
+  .wrap{position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:24px 18px 40px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+  .brand{display:flex; align-items:center; gap:12px}
+  .logo{width:48px;height:48px;border-radius:14px;
+    background:conic-gradient(from 210deg at 70% 30%, var(--brand2), var(--brand), #ff4db0 60%, #2b0d25 80%);
+    box-shadow:0 6px 22px rgba(255,45,139,.45), inset 0 0 0 1px rgba(255,255,255,.08);}
+  h1{margin:0; font-weight:900; letter-spacing:.2px; font-size:clamp(1.1rem,2.4vw,1.6rem)}
+  nav{display:flex; gap:8px; flex-wrap:wrap}
+  .pill{border:1px solid #402038; background:#2b1425; color:#ffe3f1; padding:10px 14px; border-radius:999px; cursor:pointer}
+  .pill.active{background:linear-gradient(180deg,#3b1a31,#2a1026); color:#fff; border-color:#532443; box-shadow:0 0 0 2px rgba(255,45,139,.15) inset}
+  .view{display:none} .view.active{display:block}
+  .panel-grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); margin-top:16px}
+  .card{background:linear-gradient(180deg,#2a1224,#1f0d1a); border:1px solid #3b1a30; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:10px; position:relative; overflow:hidden}
+  .card::after{content:""; position:absolute; inset:auto -30% -30% auto; width:190px; height:190px; border-radius:50%;
+    background:radial-gradient(closest-side, rgba(255,45,139,.25), transparent 70%); transform:rotate(25deg)}
+  .card h3{margin:0; font-size:1.05rem} .card p{margin:0; color:#ffd9ec; min-height:2lh}
+  .actions{display:flex; gap:8px; margin-top:auto}
+  .btn{appearance:none; border:0; border-radius:12px; padding:12px 16px; cursor:pointer; transition:.2s;
+    background:linear-gradient(180deg,#ff4db0,#ff2d8b); color:#fff; font-weight:700; letter-spacing:.2px;
+    box-shadow:0 10px 20px rgba(255,45,139,.35), inset 0 0 0 1px rgba(255,255,255,.08);}
+  .btn.secondary{background:linear-gradient(180deg,#3b1a31,#2a1026); border:1px solid #4a1f3c; color:#ffd9ec}
+  .btn:hover{filter:brightness(1.06)} .btn:active{transform:translateY(1px)}
+  .panel{background:linear-gradient(180deg,#240e20,#1a0a18); border:1px solid #3b1a30; border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); margin:16px 0 20px; display:grid; gap:12px}
+  .grid-form{display:grid; gap:10px; grid-template-columns:repeat(6,1fr)} .col-2{grid-column:span 2} .col-3{grid-column:span 3} .col-6{grid-column:span 6}
+  label{font-size:.9rem; color:#ffcae6; display:block; margin-bottom:6px}
+  .input, select, textarea{width:100%; background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:12px 14px; border-radius:12px; outline:none; transition:.2s}
+  .input:focus, select:focus, textarea:focus{border-color:#ff4db0; box-shadow:0 0 0 3px rgba(255,77,176,.2)}
+  .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px 0 14px}
+  .searchbar{position:relative} .searchbar input{width:280px; max-width:75vw}
+  .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+  .bcard{position:relative; overflow:hidden; border-radius:16px; background:#2b1425; border:1px solid #45203a; box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  .cover{aspect-ratio:2/3; width:100%; background:#1d0c19 center/cover no-repeat}
+  .badges{position:absolute; top:8px; left:8px; display:flex; gap:6px; z-index:2}
+  .badge{font-size:.72rem; padding:4px 8px; border-radius:999px; background:#2d1124cc; border:1px solid #4a1f3c; color:#ffd9ec}
+  .content{padding:10px 12px} .title{font-weight:800; font-size:1rem; line-height:1.25; margin:0 0 2px}
+  .author{font-size:.9rem; color:#ffcae6; margin:0 0 8px}
+  .meta{display:flex; gap:8px; align-items:center; justify-content:space-between}
+  .iconbtn{width:38px; height:38px; border-radius:10px; background:#38172f; border:1px solid #4a1f3c; display:grid; place-items:center; cursor:pointer; color:#ffd9ec}
+  .iconbtn:hover{filter:brightness(1.08)}
+  .stars{display:flex; gap:2px} .stars button{background:transparent; border:0; cursor:pointer; opacity:.95; color:#ff8cc9}
+  .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); backdrop-filter: blur(2px); z-index:50}
+  .modal.active{display:flex}
+  .modal-card{width:min(95vw, 680px); background:#200a1a; border:1px solid #4a1f3c; border-radius:16px; box-shadow:var(--shadow); padding:16px}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px}
+  .modal-body{display:grid; grid-template-columns: 160px 1fr; gap:16px}
+  .note{white-space:pre-wrap; background:#2b1425; border:1px solid #4a1f3c; padding:10px; border-radius:12px; min-height:84px; color:#fff}
+  /* Toast */
+  .toast{position:fixed; top:14px; right:14px; z-index:60; display:flex; flex-direction:column; gap:8px}
+  .toast .t{background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:var(--shadow)}
+  @media (max-width:740px){ .grid-form{grid-template-columns:repeat(2,1fr)} .col-2,.col-3,.col-6{grid-column:span 2} .modal-body{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="sparkles" aria-hidden="true"></div>
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Mi Biblioteca Rosa</h1></div>
+    <nav id="topNav">
+      <button class="pill active" data-route="#/panel">Panel</button>
+      <button class="pill" data-route="#/add">Agregar</button>
+      <button class="pill" data-route="#/library/all">Biblioteca</button>
+      <button class="pill" data-route="#/library/to-read">Por leer</button>
+      <button class="pill" data-route="#/library/reading">Leyendo</button>
+      <button class="pill" data-route="#/library/read">Leídos</button>
+      <button class="pill" data-route="#/stats">Estadísticas</button>
+    </nav>
+  </header>
+
+  <!-- PANEL -->
+  <section id="view-panel" class="view active">
+    <div class="panel-grid">
+      <article class="card"><h3>Agregar libro</h3><p>Escanea el ISBN o escribe los datos. La portada aparece sola.</p><div class="actions"><a class="btn" href="#/add">Ir a Agregar</a></div></article>
+      <article class="card"><h3>Biblioteca</h3><p>Filtra por estado, busca y califica con estrellas.</p><div class="actions"><a class="btn" href="#/library/all">Ver todos</a><a class="btn secondary" href="#/library/to-read">Por leer</a></div></article>
+      <article class="card"><h3>Estadísticas</h3><p>Conteos por estado y promedio ⭐.</p><div class="actions"><a class="btn" href="#/stats">Ver stats</a></div></article>
+      <article class="card"><h3>Respaldo</h3><p>Exporta/Importa tu biblioteca en JSON.</p>
+        <div class="actions">
+          <button class="btn" id="exportBtnPanel">Exportar</button>
+          <label class="btn secondary">Importar<input id="importFilePanel" type="file" accept="application/json" hidden></label>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- AGREGAR -->
+  <section id="view-add" class="view">
+    <div class="panel">
+      <form id="bookForm">
+        <div class="grid-form">
+          <div class="col-3"><label for="title">Título</label><input id="title" class="input" required placeholder="Ej: El nombre del viento"/></div>
+          <div class="col-3"><label for="author">Autor</label><input id="author" class="input" required placeholder="Ej: Patrick Rothfuss"/></div>
+          <div class="col-2">
+            <label for="isbn">ISBN (puedes escanear)</label>
+            <div style="display:flex; gap:8px"><input id="isbn" class="input" placeholder="978... (13 dígitos)" style="flex:1"/><button type="button" class="btn secondary" id="scanBtn">Escanear</button></div>
+            <small style="color:#ffcae6;opacity:.9">Consejo: usa HTTPS (GitHub Pages) para que la cámara funcione en el móvil.</small>
+          </div>
+          <div class="col-2"><label for="status">Estado</label>
+            <select id="status" class="input"><option value="to-read">Por leer</option><option value="reading">Leyendo</option><option value="read">Leído</option></select>
+          </div>
+          <div class="col-2"><label for="rating">Calificación (si leído)</label>
+            <select id="rating" class="input"><option value="0">Sin calificar</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+          </div>
+          <div class="col-6"><label for="notes">Notas (opcional)</label><textarea id="notes" rows="2" class="input" placeholder="Cita o comentario..."></textarea></div>
+          <div class="col-6" style="display:flex; gap:8px; justify-content:flex-end"><button class="btn" id="addBtn">Guardar libro</button></div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- BIBLIOTECA -->
+  <section id="view-library" class="view">
+    <div class="toolbar">
+      <div class="searchbar">
+        <input id="q" class="input" placeholder="Buscar por título o autor..."/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);opacity:.65">
+          <path d="M21 21l-4.35-4.35M10.5 18A7.5 7.5 0 1 1 10.5 3a7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <div class="pill" data-route="#/library/all">Todos</div>
+      <div class="pill" data-route="#/library/to-read">Por leer</div>
+      <div class="pill" data-route="#/library/reading">Leyendo</div>
+      <div class="pill" data-route="#/library/read">Leídos</div>
+      <button class="pill" id="exportBtn">Exportar</button>
+      <label class="pill">Importar<input id="importFile" type="file" accept="application/json" hidden></label>
+    </div>
+    <div id="grid" class="grid" aria-live="polite"></div>
+  </section>
+
+  <!-- ESTADÍSTICAS -->
+  <section id="view-stats" class="view">
+    <div class="panel"><div id="statsArea"></div></div>
+  </section>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <div class="modal-head"><h3 id="modalTitle">Detalle</h3>
+      <button class="iconbtn" id="closeModal" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="cover" id="modalCover"></div>
+      <div>
+        <div class="field"><strong>Autor:</strong> <span id="modalAuthor"></span></div>
+        <div class="field"><strong>ISBN:</strong> <span id="modalIsbn"></span></div>
+        <div class="field"><strong>Estado:</strong> <span id="modalStatus"></span></div>
+        <div class="field"><strong>Calificación:</strong> <span id="modalRating"></span> ⭐</div>
+        <div class="field"><label for="modalNotes">Notas</label><textarea id="modalNotes" class="note" rows="5"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot" style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+      <button class="btn secondary" id="saveNotes">Guardar</button>
+      <button class="btn" id="markRead">Marcar como leído</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ESCÁNER -->
+<div class="modal" id="scanModal">
+  <div class="modal-card" style="width:min(95vw,520px)">
+    <div class="modal-head"><h3>Escanear ISBN</h3>
+      <button class="iconbtn" id="closeScan" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body" style="grid-template-columns:1fr">
+      <video id="video" style="width:100%; border-radius:12px; background:#000" playsinline></video>
+      <p style="margin:8px 0 0; color:#ffd9ec">Apunta al código de barras (ISBN-13). Se rellenará automáticamente.</p>
+    </div>
+    <div class="modal-foot" style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px">
+      <button class="btn secondary" id="flipCam">Cambiar cámara</button>
+      <button class="btn" id="stopScan">Detener</button>
+    </div>
+  </div>
+</div>
+
+<!-- ZXing para escanear códigos -->
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+<script>
+/* ===== CONFIG ===== */
+const SHEETS_URL = "https://script.google.com/macros/s/REEMPLAZA_AQUI/exec"; // <- pega tu URL de Apps Script
+const KEY = "book-tracker-v1";
+/* ===== Utils ===== */
+const $ = s => document.querySelector(s); const $$ = s => Array.from(document.querySelectorAll(s));
+let state = { books: load(), route: location.hash || "#/panel", viewFilter: "all", q:"", selectedId:null };
+function load(){ try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return[]} }
+function persist(){ localStorage.setItem(KEY, JSON.stringify(state.books)); }
+function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(2); }
+function normalize(s){ return (s||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
+function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+function nextStatus(s){ return s==="to-read"?"reading":s==="reading"?"read":"to-read"; }
+function toast(msg){ const c=$("#toast"); const el=document.createElement("div"); el.className="t"; el.textContent=msg; c.appendChild(el); setTimeout(()=>{el.style.opacity=.15},1700); setTimeout(()=>el.remove(),2000); }
+
+/* ===== Router ===== */
+function go(route){ state.route=route; location.hash=route; renderRoute(); }
+function renderRoute(){
+  $$("#topNav .pill").forEach(b=>b.classList.toggle("active", b.dataset.route===state.route));
+  $$(".view").forEach(v=>v.classList.remove("active"));
+  if(state.route.startsWith("#/panel")) $("#view-panel").classList.add("active");
+  else if(state.route.startsWith("#/add")) $("#view-add").classList.add("active");
+  else if(state.route.startsWith("#/library")){ $("#view-library").classList.add("active"); const seg=state.route.split("/"); state.viewFilter=seg[2]||"all"; renderLibrary(); }
+  else if(state.route.startsWith("#/stats")){ $("#view-stats").classList.add("active"); renderStats(); }
+}
+window.addEventListener("hashchange", ()=>{ state.route=location.hash||"#/panel"; renderRoute(); });
+document.addEventListener("click",(e)=>{ const r=e.target.closest("[data-route]"); if(r){e.preventDefault(); go(r.dataset.route);} });
+
+/* ===== Portadas ===== */
+async function imgExists(url){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(true); i.onerror=()=>res(false); i.src=url; }); }
+function olCoverByIsbn(isbn, size="L"){ return `https://covers.openlibrary.org/b/isbn/${isbn}-${size}.jpg`; }
+function olCoverById(id, size="L"){ return `https://covers.openlibrary.org/b/id/${id}-${size}.jpg`; }
+async function fetchOpenLibraryByIsbn(isbn){ const clean=(isbn||"").replace(/[^0-9Xx]/g,""); if(!clean) return null;
+  const url=olCoverByIsbn(clean); if(await imgExists(url)) return {cover:url};
+  try{ const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${clean}&format=json&jscmd=data`); const data=await r.json(); const k=data[`ISBN:${clean}`]; if(k?.cover?.large) return {cover:k.cover.large}; }catch{}
+  return null;}
+async function fetchOpenLibraryByQuery(title, author){ try{ const qs=new URLSearchParams({q:`${title||""} ${author||""}`.trim(), limit:"1"}); const r=await fetch(`https://openlibrary.org/search.json?${qs}`); const j=await r.json(); const d=j.docs?.[0]; if(d?.cover_i) return {cover:olCoverById(d.cover_i)}; }catch{} return null;}
+async function fetchGoogleBooks({title, author, isbn}){ try{ let q=""; if(isbn) q=`isbn:${isbn}`; else{ const t=title?`intitle:${JSON.stringify(title).slice(1,-1)}`:""; const a=author?`+inauthor:${JSON.stringify(author).slice(1,-1)}`:""; q=`${t}${a}`||"book"; }
+  const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1`); const j=await r.json(); const item=j.items?.[0]; const img=item?.volumeInfo?.imageLinks;
+  if(img){ return {cover:(img.thumbnail||img.smallThumbnail||"").replace("http://","https://").replace("&edge=curl","")}; } }catch{} return null;}
+async function fetchCover({title, author, isbn}){ if(isbn){ const a=await fetchOpenLibraryByIsbn(isbn); if(a?.cover) return a.cover; }
+  const b=await fetchOpenLibraryByQuery(title, author); if(b?.cover) return b.cover;
+  const c=await fetchGoogleBooks({title, author, isbn}); if(c?.cover) return c.cover;
+  return "data:image/svg+xml;utf8,"+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#2b1425'/><stop offset='1' stop-color='#ff2d8b'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#ffd9ec' font-family='Arial' font-size='22'>Sin portada</text></svg>`); }
+
+/* ===== CRUD ===== */
+function addBook(b){ state.books.push(b); persist(); toast("Libro guardado ✔"); }
+function updateBook(id, patch){ const i=state.books.findIndex(x=>x.id===id); if(i>=0){ state.books[i]={...state.books[i],...patch}; persist(); } }
+function removeBook(id){ state.books=state.books.filter(x=>x.id!==id); persist(); renderLibrary(); toast("Eliminado"); }
+
+/* ===== Render Biblioteca ===== */
+function filledStar(){ return `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="m12 17.27 6.18 3.73-1.64-7.03L21 9.24l-7.19-.62L12 2 10.19 8.62 3 9.24l4.46 4.73L5.82 21z"/></svg>`; }
+function emptyStar(){ return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m12 17.27 6.18 3.73-1.64-7.03L21 9.24l-7.19-.62L12 2 10.19 8.62 3 9.24l4.46 4.73L5.82 21z" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>`; }
+function cardHtml(b){
+  const stars=[1,2,3,4,5].map(i=>`<button class="star" data-v="${i}" title="${i}">${i<=Number(b.rating||0)?filledStar():emptyStar()}</button>`).join("");
+  const badge=b.status==="to-read"?"Por leer":b.status==="reading"?"Leyendo":"Leído";
+  return `<article class="bcard" data-id="${b.id}">
+    <div class="badges"><span class="badge">${badge}</span></div>
+    <div class="cover" style="background-image:url('${b.cover||""}')"></div>
+    <div class="content">
+      <h4 class="title">${escapeHtml(b.title)}</h4>
+      <div class="author">${escapeHtml(b.author||"")}</div>
+      <div class="meta">
+        <div class="stars">${stars}</div>
+        <div style="display:flex; gap:6px">
+          <button class="iconbtn open" title="Abrir"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          <button class="iconbtn status" title="Cambiar estado"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          <button class="iconbtn markread" title="Marcar leído"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          <button class="iconbtn del" title="Eliminar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 7h12M9 7v12m6-12v12M10 7l1-2h2l1 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </article>`;}
+function renderLibrary(){
+  const grid=$("#grid"); const qn=normalize(state.q);
+  const list=state.books.filter(b=> (state.viewFilter==="all"||b.status===state.viewFilter) && (!qn || normalize(b.title).includes(qn)||normalize(b.author).includes(qn)));
+  grid.innerHTML=list.map(cardHtml).join("")||`<p style="opacity:.85;color:#ffd9ec">No hay libros aquí aún ✨</p>`;
+  $$("#grid [data-id]").forEach(el=>{
+    const id=el.dataset.id;
+    el.querySelector(".del")?.addEventListener("click",()=>removeBook(id));
+    el.querySelector(".open")?.addEventListener("click",()=>openModal(id));
+    el.querySelectorAll(".star").forEach(btn=>btn.addEventListener("click",()=>{updateBook(id,{rating:Number(btn.dataset.v),status:"read"}); renderLibrary();}));
+    el.querySelector(".markread")?.addEventListener("click",()=>{updateBook(id,{status:"read"}); renderLibrary();});
+    el.querySelector(".status")?.addEventListener("click",()=>{const next=nextStatus(state.books.find(x=>x.id===id)?.status); updateBook(id,{status:next}); renderLibrary();});
+  });
+}
+
+/* ===== Modal ===== */
+function openModal(id){ state.selectedId=id; const b=state.books.find(x=>x.id===id);
+  $("#modalTitle").textContent=b.title; $("#modalAuthor").textContent=b.author||"—"; $("#modalIsbn").textContent=b.isbn||"—";
+  $("#modalStatus").textContent=b.status; $("#modalRating").textContent=b.rating||0; $("#modalNotes").value=b.notes||"";
+  $("#modalCover").style.backgroundImage=`url('${b.cover||""}')`; $("#modal").classList.add("active"); }
+$("#closeModal").addEventListener("click",()=>$("#modal").classList.remove("active"));
+$("#saveNotes").addEventListener("click",()=>{ const id=state.selectedId; if(!id) return; updateBook(id,{notes:$("#modalNotes").value}); $("#modal").classList.remove("active"); toast("Notas guardadas"); });
+$("#markRead").addEventListener("click",()=>{ const id=state.selectedId; if(!id) return; const b=state.books.find(x=>x.id===id); updateBook(id,{status:"read",rating:b.rating||5}); $("#modal").classList.remove("active"); if(state.route.startsWith("#/library")) renderLibrary(); toast("Marcado como leído"); });
+
+/* ===== Export/Import ===== */
+$("#exportBtnPanel").addEventListener("click",exportJson); $("#importFilePanel").addEventListener("change",importJson);
+$("#exportBtn").addEventListener("click",exportJson); $("#importFile").addEventListener("change",importJson);
+function exportJson(){ const blob=new Blob([JSON.stringify(state.books,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="mi_biblioteca.json"; document.body.appendChild(a); a.click(); a.remove(); }
+function importJson(e){ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const arr=JSON.parse(r.result); if(Array.isArray(arr)){ state.books=arr.map(x=>({id:x.id||uid(), title:String(x.title||""), author:String(x.author||""), isbn:x.isbn||"", status:["to-read","reading","read"].includes(x.status)?x.status:"to-read", rating:Number(x.rating||0), notes:x.notes||"", cover:x.cover||""})); persist(); renderRoute(); toast("Importado ✔"); } else alert("El JSON no contiene un arreglo válido"); }catch{ alert("No se pudo importar el JSON"); } }; r.readAsText(f); }
+
+/* ===== Estadísticas ===== */
+function renderStats(){ const area=$("#statsArea"); const total=state.books.length;
+  const st={ "to-read":state.books.filter(b=>b.status==="to-read").length, "reading":state.books.filter(b=>b.status==="reading").length, "read":state.books.filter(b=>b.status==="read").length };
+  const rated=state.books.filter(b=>Number(b.rating)>0); const avg=rated.length?(rated.reduce((s,b)=>s+Number(b.rating),0)/rated.length).toFixed(2):"—";
+  area.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+    <div class="card"><h3>Total</h3><p style="font-size:1.8rem;margin:.2rem 0">${total}</p></div>
+    <div class="card"><h3>Por leer</h3><p style="font-size:1.8rem;margin:.2rem 0">${st["to-read"]}</p></div>
+    <div class="card"><h3>Leyendo</h3><p style="font-size:1.8rem;margin:.2rem 0">${st["reading"]}</p></div>
+    <div class="card"><h3>Leídos</h3><p style="font-size:1.8rem;margin:.2rem 0">${st["read"]}</p></div>
+    <div class="card"><h3>Promedio ⭐</h3><p style="font-size:1.8rem;margin:.2rem 0">${avg}</p></div></div>`; }
+
+/* ===== Buscador ===== */
+$("#q").addEventListener("input",e=>{ state.q=e.target.value; renderLibrary(); });
+
+/* ===== Escáner (ZXing) ===== */
+let codeReader,currentDeviceId=null; const scanModal=$("#scanModal"); const videoEl=$("#video");
+$("#scanBtn")?.addEventListener("click",openScan); $("#closeScan")?.addEventListener("click",stopScan); $("#stopScan")?.addEventListener("click",stopScan); $("#flipCam")?.addEventListener("click",flipCamera);
+async function openScan(){ scanModal.classList.add("active"); if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader();
+  const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
+  const back=devices.find(d=>/back|rear|trás|trasera|environment/i.test(d.label))||devices[0]; currentDeviceId=back?.deviceId; startDecode(); }
+async function startDecode(){ if(!currentDeviceId) return;
+  try{ await codeReader.decodeFromVideoDevice(currentDeviceId, videoEl, async (result, err)=>{ if(result){ const isbnRaw=result.getText().replace(/[^0-9Xx]/g,""); if(isbnRaw.length>=10){ await autorrellenarPorISBN(isbnRaw); stopScan(); } } }); }
+  catch(e){ console.warn("Cámara:",e); alert("No se pudo iniciar la cámara."); stopScan(); } }
+async function flipCamera(){ const devices=await ZXing.BrowserCodeReader.listVideoInputDevices(); if(!devices?.length) return;
+  const idx=devices.findIndex(d=>d.deviceId===currentDeviceId); const next=devices[(idx+1)%devices.length]; currentDeviceId=next.deviceId; codeReader?.reset(); startDecode(); }
+function stopScan(){ codeReader?.reset(); scanModal.classList.remove("active"); }
+async function autorrellenarPorISBN(isbn){ $("#isbn").value=isbn; const meta=await lookupByIsbn(isbn);
+  if(meta){ if(meta.title) $("#title").value=meta.title; if(meta.author) $("#author").value=meta.author;
+    const cover=meta.cover||await fetchCover({title:meta.title, author:meta.author, isbn}); $("#isbn").dataset.coverPreview=cover||""; toast("ISBN detectado ✔"); }
+  else alert("No se encontraron datos para ese ISBN."); }
+async function lookupByIsbn(isbn){ try{ const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`); const j=await r.json(); const k=j[`ISBN:${isbn}`]; if(k){ return {title:k.title||"", author:k.authors?.[0]?.name||"", cover:k.cover?.large||""}; } }catch{}
+  try{ const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`); const j=await r.json(); const it=j.items?.[0]; if(it){ const vi=it.volumeInfo||{}; const img=vi.imageLinks; return {title:vi.title||"", author:(vi.authors?.[0])||"", cover:(img?.thumbnail||img?.smallThumbnail||"").replace("http://","https://").replace("&edge=curl","")}; } }catch{} return null; }
+
+/* ===== Guardar ===== */
+$("#addBtn").addEventListener("click",async (e)=>{ e.preventDefault();
+  const title=$("#title").value.trim(); const author=$("#author").value.trim(); const isbn=$("#isbn").value.trim();
+  const status=$("#status").value; const rating=Number($("#rating").value||0); const notes=$("#notes").value.trim();
+  if(!title||!author){ alert("Título y autor son obligatorios"); return; }
+  const cover=$("#isbn").dataset.coverPreview||await fetchCover({title,author,isbn});
+  const book={id:uid(), title, author, isbn, status, rating, notes, cover};
+  addBook(book); sendToSheets(book).then(()=>toast("Enviado a Sheets ✔")).catch(()=>toast("Guardado local (no se pudo enviar a Sheets)"));
+  $("#bookForm").reset(); delete $("#isbn").dataset.coverPreview; go("#/library/all");
+});
+async function sendToSheets(book){ if(!SHEETS_URL || SHEETS_URL.includes("REEMPLAZA")) return;
+  const payload={action:"add", book:{...book, createdAt:new Date().toISOString()}};
+  const r=await fetch(SHEETS_URL,{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload), mode:"cors"}); if(!r.ok) throw new Error("Sheets no OK"); }
+
+/* ===== Start ===== */
+renderRoute();
+</script>
+</body>
+</html>
