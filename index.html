@@ -5,10 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Mi Biblioteca • Rosa</title>
 <meta name="theme-color" content="#ff2d8b"/>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23ff2d8b'/><stop offset='1' stop-color='%23ff8cc9'/></linearGradient></defs><rect rx='28' width='128' height='128' fill='url(%23g)'/><path d='M32 40h28a8 8 0 0 1 8 8v45H32zM60 40h36v53H60z' fill='white' opacity='.9'/></svg>">
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
 <style>
   :root{ --bg:#12010f; --bg2:#1a0a18; --card:#241220; --muted:#ffd9ec; --txt:#fff8fb;
          --brand:#ff2d8b; --brand2:#ff8cc9; --radius:18px; --shadow:0 20px 60px rgba(0,0,0,.45); }
   *{box-sizing:border-box}
+  html,body{height:100%}
   body{
     margin:0; color:var(--txt); font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial;
     background:
@@ -26,14 +32,14 @@
     animation: twinkle 6s linear infinite;
   }
   @keyframes twinkle{0%,100%{filter:brightness(1)} 50%{filter:brightness(1.35)}}
-  .wrap{position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:24px 18px 40px}
+  .wrap{position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:24px 18px 88px} /* extra bottom for mobile bar */
   header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
   .brand{display:flex; align-items:center; gap:12px}
   .logo{width:48px;height:48px;border-radius:14px;
         background:conic-gradient(from 210deg at 70% 30%, var(--brand2), var(--brand), #ff4db0 60%, #2b0d25 80%);
         box-shadow:0 6px 22px rgba(255,45,139,.45), inset 0 0 0 1px rgba(255,255,255,.08);}
   h1{margin:0; font-weight:900; letter-spacing:.2px; font-size:clamp(1.1rem,2.4vw,1.6rem)}
-  nav{display:flex; gap:8px; flex-wrap:wrap}
+  nav#topNav{display:flex; gap:8px; flex-wrap:wrap}
   .pill{border:1px solid #402038; background:#2b1425; color:#ffe3f1; padding:10px 14px; border-radius:999px; cursor:pointer}
   .pill.active{background:linear-gradient(180deg,#3b1a31,#2a1026); color:#fff; border-color:#532443; box-shadow:0 0 0 2px rgba(255,45,139,.15) inset}
   .view{display:none} .view.active{display:block}
@@ -41,8 +47,8 @@
   .card{background:linear-gradient(180deg,#2a1224,#1f0d1a); border:1px solid #3b1a30; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:10px; position:relative; overflow:hidden}
   .card::after{content:""; position:absolute; inset:auto -30% -30% auto; width:190px; height:190px; border-radius:50%;
     background:radial-gradient(closest-side, rgba(255,45,139,.25), transparent 70%); transform:rotate(25deg)}
-  .card h3{margin:0; font-size:1.05rem} .card p{margin:0; color:#ffd9ec; min-height:2lh}
-  .actions{display:flex; gap:8px; margin-top:auto}
+  .card h3{margin:0; font-size:1.05rem} .card p{margin:0; color:var(--muted); min-height:2lh}
+  .actions{display:flex; gap:8px; margin-top:auto; flex-wrap:wrap}
   .btn{appearance:none; border:0; border-radius:12px; padding:12px 16px; cursor:pointer; transition:.2s;
        background:linear-gradient(180deg,#ff4db0,#ff2d8b); color:#fff; font-weight:700; letter-spacing:.2px;
        box-shadow:0 10px 20px rgba(255,45,139,.35), inset 0 0 0 1px rgba(255,255,255,.08);}
@@ -51,10 +57,10 @@
   .panel{background:linear-gradient(180deg,#240e20,#1a0a18); border:1px solid #3b1a30; border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); margin:16px 0 20px; display:grid; gap:12px}
   .grid-form{display:grid; gap:10px; grid-template-columns:repeat(6,1fr)} .col-2{grid-column:span 2} .col-3{grid-column:span 3} .col-6{grid-column:span 6}
   label{font-size:.9rem; color:#ffcae6; display:block; margin-bottom:6px}
-  .input, select, textarea{width:100%; background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:12px 14px; border-radius:12px; outline:none; transition:.2s}
+  .input, select, textarea{width:100%; background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:14px 14px; border-radius:12px; outline:none; transition:.2s}
   .input:focus, select:focus, textarea:focus{border-color:#ff4db0; box-shadow:0 0 0 3px rgba(255,77,176,.2)}
   .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px 0 14px}
-  .searchbar{position:relative} .searchbar input{width:280px; max-width:75vw}
+  .searchbar{position:relative} .searchbar input{width:min(360px,75vw)}
   .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
   .bcard{position:relative; overflow:hidden; border-radius:16px; background:#2b1425; border:1px solid #45203a; box-shadow:0 10px 24px rgba(0,0,0,.35)}
   .cover{aspect-ratio:2/3; width:100%; background:#1d0c19 center/cover no-repeat}
@@ -63,7 +69,7 @@
   .content{padding:10px 12px} .title{font-weight:800; font-size:1rem; line-height:1.25; margin:0 0 2px}
   .author{font-size:.9rem; color:#ffcae6; margin:0 0 8px}
   .meta{display:flex; gap:8px; align-items:center; justify-content:space-between}
-  .iconbtn{width:38px; height:38px; border-radius:10px; background:#38172f; border:1px solid #4a1f3c; display:grid; place-items:center; cursor:pointer; color:#ffd9ec}
+  .iconbtn{width:42px; height:42px; border-radius:12px; background:#38172f; border:1px solid #4a1f3c; display:grid; place-items:center; cursor:pointer; color:#ffd9ec}
   .iconbtn:hover{filter:brightness(1.08)}
   .stars{display:flex; gap:2px} .stars button{background:transparent; border:0; cursor:pointer; opacity:.95; color:#ff8cc9}
   .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); backdrop-filter: blur(2px); z-index:50}
@@ -74,9 +80,8 @@
   .note{white-space:pre-wrap; background:#2b1425; border:1px solid #4a1f3c; padding:10px; border-radius:12px; min-height:84px; color:#fff}
   .toast{position:fixed; top:14px; right:14px; z-index:60; display:flex; flex-direction:column; gap:8px}
   .toast .t{background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:var(--shadow)}
-  @media (max-width:740px){ .grid-form{grid-template-columns:repeat(2,1fr)} .col-2,.col-3,.col-6{grid-column:span 2} .modal-body{grid-template-columns:1fr} }
 
-  /* ===== Overlay del escáner estilo Falabella ===== */
+  /* ===== Overlay escáner ===== */
   .scanner-wrap{position:relative; width:100%;}
   .scanner-overlay{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;}
   .scanner-frame{width:82%; max-width:520px; aspect-ratio:1.8/1; border-radius:16px;
@@ -89,6 +94,32 @@
   .help-head{display:flex; align-items:center; gap:8px; cursor:pointer}
   .help-body{display:none; margin-top:6px; color:#ffd9ec;}
   .help-sheet.open .help-body{display:block}
+
+  /* ===== Bottom bar móvil ===== */
+  .mobilebar{
+    position:fixed; bottom:0; left:0; right:0; z-index:40;
+    background:linear-gradient(180deg,#2a1224,#1f0d1a);
+    border-top:1px solid #3b1a30; padding:10px 12px;
+    display:none; gap:8px; justify-content:space-between;
+    backdrop-filter:saturate(140%) blur(6px);
+  }
+  .mobilebar .pill{flex:1; text-align:center; padding:12px 10px}
+  .install-btn{position:fixed; right:12px; bottom:72px; z-index:41}
+
+  @media (max-width:740px){
+    .grid-form{grid-template-columns:repeat(2,1fr)}
+    .col-2,.col-3,.col-6{grid-column:span 2}
+    .modal-body{grid-template-columns:1fr}
+    nav#topNav{display:none}
+    .mobilebar{display:flex}
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .btn,.pill{padding:14px 14px}
+  }
+  @media (max-width:420px){
+    .grid{grid-template-columns:1fr}
+    .content{padding:12px 12px}
+    .iconbtn{width:46px;height:46px}
+  }
 </style>
 </head>
 <body>
@@ -135,10 +166,10 @@
           <div class="col-2">
             <label for="isbn">ISBN (puedes escanear)</label>
             <div style="display:flex; gap:8px">
-              <input id="isbn" class="input" placeholder="978... (13 dígitos)" style="flex:1"/>
+              <input id="isbn" class="input" inputmode="numeric" placeholder="978... (13 dígitos)" style="flex:1"/>
               <button type="button" class="btn secondary" id="scanBtn">Escanear</button>
             </div>
-            <small style="color:#ffcae6;opacity:.9">Tip: abre la URL <strong>HTTPS</strong> (Vercel) para usar la cámara.</small>
+            <small style="color:#ffcae6;opacity:.9">Tip: abre la URL <strong>HTTPS</strong> para usar la cámara.</small>
           </div>
           <div class="col-2"><label for="status">Estado</label>
             <select id="status" class="input"><option value="to-read">Por leer</option><option value="reading">Leyendo</option><option value="read">Leído</option></select>
@@ -177,6 +208,17 @@
   </section>
 </div>
 
+<!-- BOTTOM BAR MÓVIL -->
+<div class="mobilebar" id="mobilebar">
+  <button class="pill" data-route="#/panel">Panel</button>
+  <button class="pill" data-route="#/add">Agregar</button>
+  <button class="pill" data-route="#/library/all">Biblioteca</button>
+  <button class="pill" data-route="#/stats">Stats</button>
+</div>
+
+<!-- BOTÓN INSTALAR PWA -->
+<button class="btn install-btn" id="installBtn" style="display:none">Instalar app</button>
+
 <!-- MODAL DETALLE -->
 <div class="modal" id="modal">
   <div class="modal-card">
@@ -188,9 +230,16 @@
       <div>
         <div class="field"><strong>Autor:</strong> <span id="modalAuthor"></span></div>
         <div class="field"><strong>ISBN:</strong> <span id="modalIsbn"></span></div>
-        <div class="field"><strong>Estado:</strong> <span id="modalStatus"></span></div>
+        <div class="field">
+          <strong>Estado:</strong>
+          <select id="modalStatusSel" class="input" style="width:auto; display:inline-block; min-width:140px; margin-left:6px">
+            <option value="to-read">Por leer</option>
+            <option value="reading">Leyendo</option>
+            <option value="read">Leído</option>
+          </select>
+        </div>
         <div class="field"><strong>Calificación:</strong> <span id="modalRating"></span> ⭐</div>
-        <div class="field"><label for="modalNotes">Notas</label><textarea id="modalNotes" class="note" rows="5"></textarea></div>
+        <div class="field"><label for="modalNotes">Notas</label><textarea id="modalNotes" class="note" rows="5" placeholder="Escribe tus notas..."></textarea></div>
       </div>
     </div>
     <div class="modal-foot" style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
@@ -239,11 +288,11 @@
   </div>
 </div>
 
-<!-- ZXing (fallback) -->
+<!-- ZXing (fallback de escaneo) -->
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 <script>
 /* ===== CONFIG ===== */
-const SHEETS_URL = "https://script.google.com/macros/library/d/10b7lnMs_Q69F8O4CKNekwxwRZfxxsMvFVvjwsxWYhKhJg0wIcdXxphp3/2"; // <-- pega tu /exec real
+const SHEETS_URL = "https://script.google.com/macros/library/d/10b7lnMs_Q69F8O4CKNekwxwRZfxxsMvFVvjwsxWYhKhJg0wIcdXxphp3/2"; // opcional
 const KEY = "book-tracker-v1";
 
 /* ===== Utils ===== */
@@ -260,7 +309,7 @@ function toast(msg){ const c=$("#toast"); const el=document.createElement("div")
 /* ===== Router ===== */
 function go(route){ state.route=route; location.hash=route; renderRoute(); }
 function renderRoute(){
-  $$("#topNav .pill").forEach(b=>b.classList.toggle("active", b.dataset.route===state.route));
+  $$("#topNav .pill, #mobilebar .pill").forEach(b=>b.classList.toggle("active", b.dataset.route===state.route));
   $$(".view").forEach(v=>v.classList.remove("active"));
   if(state.route.startsWith("#/panel")) $("#view-panel").classList.add("active");
   else if(state.route.startsWith("#/add")) $("#view-add").classList.add("active");
@@ -329,13 +378,31 @@ function renderLibrary(){
 }
 
 /* Modal detalle */
-function openModal(id){ state.selectedId=id; const b=state.books.find(x=>x.id===id);
+function openModal(id){
+  state.selectedId=id; const b=state.books.find(x=>x.id===id);
   $("#modalTitle").textContent=b.title; $("#modalAuthor").textContent=b.author||"—"; $("#modalIsbn").textContent=b.isbn||"—";
-  $("#modalStatus").textContent=b.status; $("#modalRating").textContent=b.rating||0; $("#modalNotes").value=b.notes||"";
-  $("#modalCover").style.backgroundImage=`url('${b.cover||""}')`; $("#modal").classList.add("active"); }
+  $("#modalRating").textContent=b.rating||0; $("#modalNotes").value=b.notes||"";
+  $("#modalCover").style.backgroundImage=`url('${b.cover||""}')`;
+  $("#modalStatusSel").value=b.status||"to-read";
+  $("#modal").classList.add("active");
+}
 $("#closeModal").addEventListener("click",()=>$("#modal").classList.remove("active"));
 $("#saveNotes").addEventListener("click",()=>{ const id=state.selectedId; if(!id) return; updateBook(id,{notes:$("#modalNotes").value}); $("#modal").classList.remove("active"); toast("Notas guardadas"); });
 $("#markRead").addEventListener("click",()=>{ const id=state.selectedId; if(!id) return; const b=state.books.find(x=>x.id===id); updateBook(id,{status:"read",rating:b.rating||5}); $("#modal").classList.remove("active"); if(state.route.startsWith("#/library")) renderLibrary(); toast("Marcado como leído"); });
+
+// select de estado en modal
+$("#modalStatusSel").addEventListener("change",(e)=>{
+  const id=state.selectedId; if(!id) return;
+  updateBook(id,{status:e.target.value}); toast("Estado actualizado");
+  if(state.route.startsWith("#/library")) renderLibrary();
+});
+// autosave notas (debounce)
+let notesTimer=null;
+$("#modalNotes").addEventListener("input", ()=>{
+  const id=state.selectedId; if(!id) return;
+  clearTimeout(notesTimer);
+  notesTimer=setTimeout(()=>{ updateBook(id,{notes:$("#modalNotes").value}); toast("Notas guardadas"); }, 550);
+});
 
 /* Export/Import/Reset */
 $("#exportBtnPanel").addEventListener("click",exportJson); $("#importFilePanel").addEventListener("change",importJson);
@@ -387,7 +454,7 @@ torchBtn.addEventListener("click", async ()=>{
 });
 
 async function openScan(){
-  if(!(location.protocol==='https:' || location.hostname==='localhost')){ alert('Usa una URL HTTPS (Vercel/Netlify) para abrir la cámara.'); return; }
+  if(!(location.protocol==='https:' || location.hostname==='localhost')){ alert('Usa una URL HTTPS para abrir la cámara.'); return; }
   if(!navigator.mediaDevices?.getUserMedia){ alert('Tu navegador no soporta cámara.'); return; }
 
   scanModal.classList.add("active");
@@ -483,9 +550,8 @@ async function startZXing(){
   });
 }
 
-/* ===== Limpieza/validación de ISBN ===== */
+/* ===== ISBN helpers ===== */
 function normalizeIsbnCandidate(s){
-  // quita todo lo que no sea dígito y recorta a 13 (algunos EAN traen add-on 5 dígitos)
   const digits = String(s||"").replace(/\D/g,"");
   if(digits.length < 12) return null;
   const v = digits.length>13 ? digits.slice(0,13) : digits;
@@ -500,17 +566,14 @@ function isValidIsbn13(v){
 
 let handling=false;
 async function onIsbnDetected(isbn){
-  if(handling) return;
-  handling=true;
+  if(handling) return; handling=true;
   try{
     await autorrellenarPorISBN(isbn);
     toast("ISBN detectado ✔");
     stopScan();
   }catch(e){
     console.warn('autorrellenar error:',e); alert('Se leyó el código, pero no se pudo completar.');
-  }finally{
-    handling=false;
-  }
+  }finally{ handling=false; }
 }
 
 function stopScan(){
@@ -523,7 +586,7 @@ function stopCamera(){
   try{ if(currentStream){ currentStream.getTracks().forEach(t=>t.stop()); currentStream=null; } videoEl.srcObject=null; videoEl.pause?.(); }catch{}
 }
 
-/* ===== Autorrellenar por ISBN (mejorado) ===== */
+/* ===== Autorrellenar por ISBN ===== */
 async function autorrellenarPorISBN(isbn){
   $("#isbn").value=isbn;
   const meta=await lookupByIsbn(isbn);
@@ -532,7 +595,6 @@ async function autorrellenarPorISBN(isbn){
     if(meta.author) $("#author").value=meta.author;
     if(meta.publisher || meta.year || meta.pages){
       const extra = `Editorial: ${meta.publisher||"—"}${meta.year? " • Año: "+meta.year:""}${meta.pages? " • Páginas: "+meta.pages:""}`;
-      // no sobreescribe tus notas si ya hay algo
       if(!$("#notes").value) $("#notes").value = extra;
     }
     const cover=meta.cover||await fetchCover({title:meta.title,author:meta.author,isbn});
@@ -542,36 +604,30 @@ async function autorrellenarPorISBN(isbn){
   }
 }
 
-/* === Buscador robusto de OpenLibrary + Google Books === */
+/* === Lookup OpenLibrary + Google Books === */
 async function lookupByIsbn(isbn){
   const clean = (isbn||"").replace(/[^0-9Xx]/g,"");
   if(!clean) return null;
 
-  // 1) OpenLibrary directo /isbn/{isbn}.json
+  // 1) OpenLibrary /isbn/{isbn}.json
   try{
     const r = await fetch(`https://openlibrary.org/isbn/${clean}.json`);
     if(r.ok){
       const d = await r.json();
-      // Autor por id si corresponde
       let author="";
       if(d.authors && d.authors[0]?.key){
-        try{
-          const ra = await fetch(`https://openlibrary.org${d.authors[0].key}.json`);
-          if(ra.ok){ const ja=await ra.json(); author=ja.name||""; }
-        }catch{}
+        try{ const ra = await fetch(`https://openlibrary.org${d.authors[0].key}.json`);
+             if(ra.ok){ const ja=await ra.json(); author=ja.name||""; } }catch{}
       }
       return {
-        title: d.title||"",
-        author,
+        title: d.title||"", author,
         cover: `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
-        publisher: d.publishers?.[0]||"",
-        year: d.publish_date||"",
-        pages: d.number_of_pages||""
+        publisher: d.publishers?.[0]||"", year: d.publish_date||"", pages: d.number_of_pages||""
       };
     }
   }catch{}
 
-  // 2) OpenLibrary API “books?bibkeys=…”
+  // 2) OpenLibrary API books?bibkeys
   try{
     const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${clean}&format=json&jscmd=data`);
     const j=await r.json(); const k=j[`ISBN:${clean}`];
@@ -581,8 +637,7 @@ async function lookupByIsbn(isbn){
         author:k.authors?.[0]?.name||"",
         cover:k.cover?.large||`https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
         publisher:k.publishers?.[0]?.name||"",
-        year:k.publish_date||"",
-        pages:k.number_of_pages||""
+        year:k.publish_date||"", pages:k.number_of_pages||""
       }; 
     }
   }catch{}
@@ -594,16 +649,12 @@ async function lookupByIsbn(isbn){
     if(it){
       const vi=it.volumeInfo||{}, img=vi.imageLinks||{};
       return {
-        title: vi.title||"",
-        author: (vi.authors?.[0])||"",
+        title: vi.title||"", author: (vi.authors?.[0])||"",
         cover: (img.thumbnail||img.smallThumbnail||"").replace("http://","https://"),
-        publisher: vi.publisher||"",
-        year: vi.publishedDate||"",
-        pages: vi.pageCount||""
+        publisher: vi.publisher||"", year: vi.publishedDate||"", pages: vi.pageCount||""
       };
     }
   }catch{}
-
   return null;
 }
 
@@ -619,9 +670,9 @@ $("#addBtn").addEventListener("click",async (e)=>{ e.preventDefault();
   $("#bookForm").reset(); delete $("#isbn").dataset.coverPreview; go("#/library/all");
 });
 
-/* Enviar a Sheets (simple request, sin CORS duro) */
+/* Enviar a Sheets (opcional) */
 async function sendToSheets(book){
-  if(!SHEETS_URL || SHEETS_URL.includes("REEMPLAZA")) return;
+  if(!SHEETS_URL || SHEETS_URL.includes("script.google.com/macros/library")) return;
   const form=new URLSearchParams();
   form.set('action','add');
   form.set('book', JSON.stringify({ ...book, createdAt:new Date().toISOString() }));
@@ -631,6 +682,26 @@ async function sendToSheets(book){
 /* Búsqueda y navegación */
 $("#q").addEventListener("input", e=>{ state.q=e.target.value||""; renderLibrary(); });
 renderRoute();
+
+/* ===== PWA: registrar SW e instalar ===== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('./service-worker.js'));
+}
+
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  $("#installBtn").style.display="block";
+});
+$("#installBtn").addEventListener('click', async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if(outcome==='accepted') toast("Instalada ✔");
+  $("#installBtn").style.display="none";
+  deferredPrompt=null;
+});
 </script>
 </body>
 </html>
