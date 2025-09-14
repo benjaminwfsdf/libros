@@ -75,6 +75,28 @@
   .toast{position:fixed; top:14px; right:14px; z-index:60; display:flex; flex-direction:column; gap:8px}
   .toast .t{background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:var(--shadow)}
   @media (max-width:740px){ .grid-form{grid-template-columns:repeat(2,1fr)} .col-2,.col-3,.col-6{grid-column:span 2} .modal-body{grid-template-columns:1fr} }
+
+  /* ===== Overlay del escáner estilo Falabella ===== */
+  .scanner-wrap{position:relative; width:100%;}
+  .scanner-overlay{
+    position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;
+  }
+  .scanner-frame{
+    width:82%; max-width:520px; aspect-ratio:1.8/1; border-radius:16px;
+    outline:2px solid rgba(255,255,255,.26);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);
+  }
+  .scanner-corners::before,
+  .scanner-corners::after{
+    content:""; position:absolute; width:28px; height:28px; border:3px solid #fff; opacity:.9;
+  }
+  .scanner-corners::before{ inset:auto auto 14% 8%; border-right:0; border-top:0; border-radius:0 0 0 10px;}
+  .scanner-corners::after{ inset:14% 8% auto auto; border-left:0; border-bottom:0; border-radius:10px 0 0 0;}
+  .scanner-text{ position:absolute; top:10%; width:100%; text-align:center; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.6); font-weight:700}
+  .help-sheet{ background:#2b1425; border:1px solid #4a1f3c; border-radius:12px; padding:10px; }
+  .help-head{display:flex; align-items:center; gap:8px; cursor:pointer}
+  .help-body{display:none; margin-top:6px; color:#ffd9ec;}
+  .help-sheet.open .help-body{display:block}
 </style>
 </head>
 <body>
@@ -124,7 +146,7 @@
               <input id="isbn" class="input" placeholder="978... (13 dígitos)" style="flex:1"/>
               <button type="button" class="btn secondary" id="scanBtn">Escanear</button>
             </div>
-            <small style="color:#ffcae6;opacity:.9">Tip: abre la URL https de Vercel para usar la cámara.</small>
+            <small style="color:#ffcae6;opacity:.9">Tip: abre la URL <strong>HTTPS</strong> (Vercel) para usar la cámara.</small>
           </div>
           <div class="col-2"><label for="status">Estado</label>
             <select id="status" class="input"><option value="to-read">Por leer</option><option value="reading">Leyendo</option><option value="read">Leído</option></select>
@@ -190,26 +212,47 @@
 <div class="modal" id="scanModal">
   <div class="modal-card" style="width:min(95vw,520px)">
     <div class="modal-head"><h3>Escanear ISBN</h3>
-      <button class="iconbtn" id="closeScan" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <div style="display:flex; gap:8px; align-items:center">
+        <button class="btn secondary" id="torchBtn" title="Linterna">Linterna</button>
+        <button class="iconbtn" id="closeScan" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      </div>
     </div>
     <div class="modal-body" style="grid-template-columns:1fr">
-      <!-- iOS: autoplay + muted + playsinline -->
-      <video id="video" autoplay muted playsinline webkit-playsinline
-             style="width:100%; border-radius:12px; background:#000"></video>
-      <p style="margin:8px 0 0; color:#ffd9ec">Apunta al código de barras (ISBN-13).</p>
+      <div class="scanner-wrap">
+        <!-- iOS: autoplay + muted + playsinline -->
+        <video id="video" autoplay muted playsinline webkit-playsinline style="width:100%; border-radius:12px; background:#000"></video>
+        <div class="scanner-overlay">
+          <div class="scanner-text">Escanea el código de barras</div>
+          <div class="scanner-frame scanner-corners"></div>
+        </div>
+      </div>
+
+      <div class="help-sheet" id="helpSheet" style="margin-top:10px">
+        <div class="help-head">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <strong>¿Cómo usar el escáner?</strong>
+        </div>
+        <div class="help-body">
+          <ul style="margin:8px 0 0 18px">
+            <li>Apunta al código de barras de la contraportada.</li>
+            <li>Activa la <em>linterna</em> si hay poca luz (si tu teléfono lo permite).</li>
+            <li>También puedes escribir el código manualmente.</li>
+          </ul>
+        </div>
+      </div>
     </div>
-    <div class="modal-foot" style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px">
+    <div class="modal-foot" style="display:flex; justify-content:space-between; gap:8px; margin-top:10px">
       <button class="btn secondary" id="flipCam">Cambiar cámara</button>
       <button class="btn" id="stopScan">Detener</button>
     </div>
   </div>
 </div>
 
-<!-- ZXing -->
+<!-- ZXing (fallback) -->
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 <script>
 /* ===== CONFIG ===== */
-const SHEETS_URL = "https://script.google.com/macros/library/d/10b7lnMs_Q69F8O4CKNekwxwRZfxxsMvFVvjwsxWYhKhJg0wIcdXxphp3/2"; // <-- pega tu /exec
+const SHEETS_URL = "https://script.google.com/macros/library/d/10b7lnMs_Q69F8O4CKNekwxwRZfxxsMvFVvjwsxWYhKhJg0wIcdXxphp3/2"; // <-- pega tu /exec real
 const KEY = "book-tracker-v1";
 
 /* ===== Utils ===== */
@@ -321,10 +364,14 @@ function renderStats(){ const area=$("#statsArea"); const total=state.books.leng
     <div class="card"><h3>Leídos</h3><p style="font-size:1.8rem;margin:.2rem 0">${st["read"]}</p></div>
     <div class="card"><h3>Promedio ⭐</h3><p style="font-size:1.8rem;margin:.2rem 0">${avg}</p></div></div>`; }
 
-/* ===== Escáner (SIEMPRE trasera + recuerda la última) ===== */
-let codeReader=null, currentStream=null, devices=[], currentIndex=-1;
+/* ===== Escáner (trasera + torch + BarcodeDetector -> ZXing) ===== */
+let codeReader=null, currentStream=null, devices=[], currentIndex=-1, imageCapture=null, torchOn=false;
 const CAM_KEY='book-tracker-lastCameraId';
-const scanModal=$("#scanModal"), videoEl=$("#video");
+const scanModal=$("#scanModal"), videoEl=$("#video"), torchBtn=$("#torchBtn");
+
+// ayuda plegable
+const helpSheet=$("#helpSheet");
+helpSheet.querySelector(".help-head").addEventListener("click",()=>helpSheet.classList.toggle("open"));
 
 $("#scanBtn")?.addEventListener("click", openScan);
 $("#closeScan")?.addEventListener("click", stopScan);
@@ -337,19 +384,30 @@ $("#flipCam")?.addEventListener("click", async ()=>{
   try{ localStorage.setItem(CAM_KEY, devices[currentIndex].deviceId); }catch{}
 });
 
+// Linterna (cuando soporte)
+torchBtn.addEventListener("click", async ()=>{
+  if(!imageCapture){ toast("Linterna no disponible"); return; }
+  try{
+    torchOn=!torchOn;
+    const track=currentStream.getVideoTracks()[0];
+    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+    torchBtn.textContent = torchOn ? "Linterna (ON)" : "Linterna";
+  }catch{ toast("No se pudo activar la linterna"); }
+});
+
 async function openScan(){
-  if(!(location.protocol==='https:' || location.hostname==='localhost')){ alert('Usa la URL https (Vercel).'); return; }
+  if(!(location.protocol==='https:' || location.hostname==='localhost')){ alert('Usa una URL HTTPS (Vercel/Netlify) para abrir la cámara.'); return; }
   if(!navigator.mediaDevices?.getUserMedia){ alert('Tu navegador no soporta cámara.'); return; }
 
   scanModal.classList.add("active");
   try{
-    // 1) warmup rápido intentando trasera
+    // 1) warmup rápido intentando trasera (necesario para iOS para revelar labels)
     const warmup = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact:'environment' } } })
       .catch(()=> navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } }))
       .catch(()=> navigator.mediaDevices.getUserMedia({ video:true }));
     if(warmup){ attachStream(warmup); currentStream=warmup; }
 
-    // 2) lista cámaras (con labels)
+    // 2) lista cámaras
     devices = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
 
     // 3) elegir trasera o la recordada
@@ -357,7 +415,7 @@ async function openScan(){
     let preferId = saved && devices.some(d=>d.deviceId===saved) ? saved : null;
     if(!preferId){
       const back = devices.find(d=>/back|rear|environment|traser|trás/i.test(d.label));
-      preferId = back?.deviceId || (devices[devices.length-1]||devices[0])?.deviceId; // iOS sin labels
+      preferId = back?.deviceId || (devices[devices.length-1]||devices[0])?.deviceId;
     }
 
     // 4) arrancar explícito por deviceId
@@ -365,8 +423,7 @@ async function openScan(){
     await startDecoding();
   }catch(err){
     console.warn('openScan error:', err);
-    alert('No se pudo abrir la cámara. Revisa permisos del sitio.\n'+(err.message||''));
-    stopScan();
+    alert('No se pudo abrir la cámara. Revisa permisos del sitio.\n'+(err.message||'')); stopScan();
   }
 }
 
@@ -378,41 +435,106 @@ function attachStream(stream){
   videoEl.muted=true;
   videoEl.srcObject=stream;
   videoEl.play?.();
+  // preparar ImageCapture para torch (si existe)
+  try{
+    const track=stream.getVideoTracks()[0];
+    imageCapture = ('ImageCapture' in window) ? new ImageCapture(track) : null;
+  }catch{ imageCapture=null; }
 }
 
 async function startCameraByDeviceId(deviceId){
   stopCamera();
   const constraints = deviceId ? { video:{ deviceId:{ exact:deviceId } } } : { video:{ facingMode:'environment' } };
   const stream = await navigator.mediaDevices.getUserMedia(constraints).catch(async ()=>{
-    // fallbacks
     try{ return await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } }); }catch{}
     return await navigator.mediaDevices.getUserMedia({ video:true });
   });
   currentStream=stream; attachStream(stream);
-  // set currentIndex
   currentIndex = Math.max(0, devices.findIndex(d=>d.deviceId===deviceId));
+  torchOn=false; torchBtn.textContent="Linterna";
 }
 
+let stopDetector=null, decodingWithZXing=false;
 async function startDecoding(){
-  if(!codeReader) codeReader = new ZXing.BrowserMultiFormatReader();
+  // Prioridad: BarcodeDetector nativo
+  if('BarcodeDetector' in window){
+    const formats = ['ean_13','isbn_13','ean_8','upc_a','code_128'];
+    let detector;
+    try{ detector = new BarcodeDetector({ formats }); }catch{ detector = new BarcodeDetector(); }
+
+    let running=true;
+    stopDetector=()=>{ running=false; };
+    decodingWithZXing=false;
+
+    const loop = async ()=>{
+      if(!running) return;
+      try{
+        const barcodes = await detector.detect(videoEl);
+        if(barcodes && barcodes.length){
+          const txt = (barcodes[0].rawValue||"").replace(/[^0-9Xx]/g,"");
+          if(isValidIsbn13(txt)){
+            await onIsbnDetected(txt); return;
+          }
+        }
+      }catch(e){
+        // Si el detector falla repetidamente, cae a ZXing
+        console.warn('BarcodeDetector error -> fallback ZXing', e);
+        running=false; await startZXing(); return;
+      }
+      requestAnimationFrame(loop);
+    };
+    loop();
+  }else{
+    await startZXing();
+  }
+}
+
+async function startZXing(){
+  if(!codeReader){
+    const hints = new Map();
+    // Limitar a formatos de barras típicos de ISBN para mejorar performance
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.ISBN, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A]);
+    codeReader = new ZXing.BrowserMultiFormatReader(hints);
+  }
   try{ codeReader.reset(); }catch{}
+  decodingWithZXing=true;
   await codeReader.decodeFromVideoElementContinuously(videoEl, async (result, err)=>{
     if(result){
       const isbnRaw=String(result.getText()||'').replace(/[^0-9Xx]/g,'');
-      if(isbnRaw.length>=10){
-        try{
-          await autorrellenarPorISBN(isbnRaw);
-          toast("ISBN detectado ✔");
-          stopScan();
-        }catch(e){ console.warn('autorrellenar error:',e); alert('Se leyó el código, pero no se pudo completar.'); }
-      }
+      if(isValidIsbn13(isbnRaw)){ await onIsbnDetected(isbnRaw); }
     }
-    // NotFoundException => aún no hay código; ignorar.
+    // NotFoundException => sin código; ignorar.
   });
+}
+
+function isValidIsbn13(s){
+  const v = (s||"").replace(/\D/g,"");
+  if(v.length!==13) return false;
+  if(!(v.startsWith("978") || v.startsWith("979"))) return false;
+  // checksum ISBN-13
+  let sum=0; for(let i=0;i<12;i++){ sum += (i%2?3:1)*Number(v[i]); }
+  const check = (10 - (sum%10))%10;
+  return check===Number(v[12]);
+}
+
+let handling=false;
+async function onIsbnDetected(isbn){
+  if(handling) return;
+  handling=true;
+  try{
+    await autorrellenarPorISBN(isbn);
+    toast("ISBN detectado ✔");
+    stopScan();
+  }catch(e){
+    console.warn('autorrellenar error:',e); alert('Se leyó el código, pero no se pudo completar.');
+  }finally{
+    handling=false;
+  }
 }
 
 function stopScan(){
   stopCamera();
+  try{ stopDetector?.(); }catch{}
   try{ codeReader?.reset(); }catch{}
   scanModal.classList.remove("active");
 }
@@ -471,7 +593,8 @@ async function sendToSheets(book){
   await fetch(SHEETS_URL,{ method:'POST', mode:'no-cors', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: form.toString() });
 }
 
-/* Start */
+/* Búsqueda y navegación */
+$("#q").addEventListener("input", e=>{ state.q=e.target.value||""; renderLibrary(); });
 renderRoute();
 </script>
 </body>
