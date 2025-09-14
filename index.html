@@ -5,18 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Mi Biblioteca • Rosa</title>
 <meta name="theme-color" content="#ff2d8b"/>
+
+<!-- PWA -->
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23ff2d8b'/><stop offset='1' stop-color='%23ff8cc9'/></linearGradient></defs><rect rx='28' width='128' height='128' fill='url(%23g)'/><path d='M32 40h28a8 8 0 0 1 8 8v45H32zM60 40h36v53H60z' fill='white' opacity='.9'/></svg>">
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+
+<!-- Favicon simple -->
+<link rel="icon" type="image/png" href="/icons/icon-192.png
 <style>
-  :root{ --bg:#12010f; --bg2:#1a0a18; --card:#241220; --muted:#ffd9ec; --txt:#fff8fb;
-         --brand:#ff2d8b; --brand2:#ff8cc9; --radius:18px; --shadow:0 20px 60px rgba(0,0,0,.45); }
+  :root{
+    --bg:#12010f; --bg2:#1a0a18; --card:#241220; --muted:#ffd9ec; --txt:#fff8fb;
+    --brand:#ff2d8b; --brand2:#ff8cc9; --radius:18px; --shadow:0 20px 60px rgba(0,0,0,.45);
+  }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; color:var(--txt); font:16px/1.5 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial;
+    margin:0; color:var(--txt); font:16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Roboto, Arial;
     background:
       radial-gradient(1400px 700px at 10% -10%, rgba(255,45,139,.20), transparent 60%),
       radial-gradient(900px 600px at 100% 0%, rgba(255,140,201,.18), transparent 70%),
@@ -32,7 +38,8 @@
     animation: twinkle 6s linear infinite;
   }
   @keyframes twinkle{0%,100%{filter:brightness(1)} 50%{filter:brightness(1.35)}}
-  .wrap{position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:24px 18px 88px} /* extra bottom for mobile bar */
+
+  .wrap{position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:24px 18px 92px}
   header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
   .brand{display:flex; align-items:center; gap:12px}
   .logo{width:48px;height:48px;border-radius:14px;
@@ -40,27 +47,32 @@
         box-shadow:0 6px 22px rgba(255,45,139,.45), inset 0 0 0 1px rgba(255,255,255,.08);}
   h1{margin:0; font-weight:900; letter-spacing:.2px; font-size:clamp(1.1rem,2.4vw,1.6rem)}
   nav#topNav{display:flex; gap:8px; flex-wrap:wrap}
-  .pill{border:1px solid #402038; background:#2b1425; color:#ffe3f1; padding:10px 14px; border-radius:999px; cursor:pointer}
+  .pill{border:1px solid #402038; background:#2b1425; color:#ffe3f1; padding:11px 14px; border-radius:999px; cursor:pointer}
   .pill.active{background:linear-gradient(180deg,#3b1a31,#2a1026); color:#fff; border-color:#532443; box-shadow:0 0 0 2px rgba(255,45,139,.15) inset}
   .view{display:none} .view.active{display:block}
+
   .panel-grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); margin-top:16px}
   .card{background:linear-gradient(180deg,#2a1224,#1f0d1a); border:1px solid #3b1a30; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column; gap:10px; position:relative; overflow:hidden}
   .card::after{content:""; position:absolute; inset:auto -30% -30% auto; width:190px; height:190px; border-radius:50%;
     background:radial-gradient(closest-side, rgba(255,45,139,.25), transparent 70%); transform:rotate(25deg)}
   .card h3{margin:0; font-size:1.05rem} .card p{margin:0; color:var(--muted); min-height:2lh}
   .actions{display:flex; gap:8px; margin-top:auto; flex-wrap:wrap}
+
   .btn{appearance:none; border:0; border-radius:12px; padding:12px 16px; cursor:pointer; transition:.2s;
        background:linear-gradient(180deg,#ff4db0,#ff2d8b); color:#fff; font-weight:700; letter-spacing:.2px;
        box-shadow:0 10px 20px rgba(255,45,139,.35), inset 0 0 0 1px rgba(255,255,255,.08);}
   .btn.secondary{background:linear-gradient(180deg,#3b1a31,#2a1026); border:1px solid #4a1f3c; color:#ffd9ec}
   .btn:hover{filter:brightness(1.06)} .btn:active{transform:translateY(1px)}
+
   .panel{background:linear-gradient(180deg,#240e20,#1a0a18); border:1px solid #3b1a30; border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); margin:16px 0 20px; display:grid; gap:12px}
   .grid-form{display:grid; gap:10px; grid-template-columns:repeat(6,1fr)} .col-2{grid-column:span 2} .col-3{grid-column:span 3} .col-6{grid-column:span 6}
   label{font-size:.9rem; color:#ffcae6; display:block; margin-bottom:6px}
-  .input, select, textarea{width:100%; background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:14px 14px; border-radius:12px; outline:none; transition:.2s}
+  .input, select, textarea{width:100%; background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:14px; border-radius:12px; outline:none; transition:.2s}
   .input:focus, select:focus, textarea:focus{border-color:#ff4db0; box-shadow:0 0 0 3px rgba(255,77,176,.2)}
+
   .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px 0 14px}
   .searchbar{position:relative} .searchbar input{width:min(360px,75vw)}
+
   .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
   .bcard{position:relative; overflow:hidden; border-radius:16px; background:#2b1425; border:1px solid #45203a; box-shadow:0 10px 24px rgba(0,0,0,.35)}
   .cover{aspect-ratio:2/3; width:100%; background:#1d0c19 center/cover no-repeat}
@@ -72,16 +84,18 @@
   .iconbtn{width:42px; height:42px; border-radius:12px; background:#38172f; border:1px solid #4a1f3c; display:grid; place-items:center; cursor:pointer; color:#ffd9ec}
   .iconbtn:hover{filter:brightness(1.08)}
   .stars{display:flex; gap:2px} .stars button{background:transparent; border:0; cursor:pointer; opacity:.95; color:#ff8cc9}
+
   .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); backdrop-filter: blur(2px); z-index:50}
   .modal.active{display:flex}
   .modal-card{width:min(95vw, 680px); background:#200a1a; border:1px solid #4a1f3c; border-radius:16px; box-shadow:var(--shadow); padding:16px}
   .modal-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px}
   .modal-body{display:grid; grid-template-columns: 160px 1fr; gap:16px}
   .note{white-space:pre-wrap; background:#2b1425; border:1px solid #4a1f3c; padding:10px; border-radius:12px; min-height:84px; color:#fff}
+
   .toast{position:fixed; top:14px; right:14px; z-index:60; display:flex; flex-direction:column; gap:8px}
   .toast .t{background:#2b1425; border:1px solid #4a1f3c; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:var(--shadow)}
 
-  /* ===== Overlay escáner ===== */
+  /* ===== Escáner ===== */
   .scanner-wrap{position:relative; width:100%;}
   .scanner-overlay{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;}
   .scanner-frame{width:82%; max-width:520px; aspect-ratio:1.8/1; border-radius:16px;
@@ -292,7 +306,7 @@
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 <script>
 /* ===== CONFIG ===== */
-const SHEETS_URL = "https://script.google.com/macros/library/d/10b7lnMs_Q69F8O4CKNekwxwRZfxxsMvFVvjwsxWYhKhJg0wIcdXxphp3/2"; // opcional
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwQKismwlGoG2UpKFG5EPlkyLgPkPnDl--hvYMdfBhu_EV6cRaX8NoBCXN9N5MG9DJ5/exec"; // si usas Google Apps Script, pega aquí tu /exec
 const KEY = "book-tracker-v1";
 
 /* ===== Utils ===== */
@@ -313,28 +327,70 @@ function renderRoute(){
   $$(".view").forEach(v=>v.classList.remove("active"));
   if(state.route.startsWith("#/panel")) $("#view-panel").classList.add("active");
   else if(state.route.startsWith("#/add")) $("#view-add").classList.add("active");
-  else if(state.route.startsWith("#/library")){ $("#view-library").classList.add("active"); const seg=state.route.split("/"); state.viewFilter=seg[2]||"all"; renderLibrary(); }
-  else if(state.route.startsWith("#/stats")){ $("#view-stats").classList.add("active"); renderStats(); }
+  else if(state.route.startsWith("#/library")){
+    $("#view-library").classList.add("active");
+    const seg=state.route.split("/"); state.viewFilter=seg[2]||"all"; renderLibrary();
+  } else if(state.route.startsWith("#/stats")){ $("#view-stats").classList.add("active"); renderStats(); }
 }
 window.addEventListener("hashchange", ()=>{ state.route=location.hash||"#/panel"; renderRoute(); });
 document.addEventListener("click",(e)=>{ const r=e.target.closest("[data-route]"); if(r){e.preventDefault(); go(r.dataset.route);} });
 
-/* ===== Portadas ===== */
-async function imgExists(url){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(true); i.onerror=()=>res(false); i.src=url; }); }
-function olCoverByIsbn(isbn, size="L"){ return `https://covers.openlibrary.org/b/isbn/${isbn}-${size}.jpg`; }
-function olCoverById(id, size="L"){ return `https://covers.openlibrary.org/b/id/${id}-${size}.jpg`; }
-async function fetchOpenLibraryByIsbn(isbn){ const clean=(isbn||"").replace(/[^0-9Xx]/g,""); if(!clean) return null;
-  const url=olCoverByIsbn(clean); if(await imgExists(url)) return {cover:url};
-  try{ const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${clean}&format=json&jscmd=data`); const data=await r.json(); const k=data[`ISBN:${clean}`]; if(k?.cover?.large) return {cover:k.cover.large}; }catch{}
-  return null;}
-async function fetchOpenLibraryByQuery(title, author){ try{ const qs=new URLSearchParams({q:`${title||""} ${author||""}`.trim(), limit:"1"}); const r=await fetch(`https://openlibrary.org/search.json?${qs}`); const j=await r.json(); const d=j.docs?.[0]; if(d?.cover_i) return {cover:olCoverById(d.cover_i)}; }catch{} return null;}
-async function fetchGoogleBooks({title, author, isbn}){ try{ let q=""; if(isbn) q=`isbn:${isbn}`; else{ const t=title?`intitle:${JSON.stringify(title).slice(1,-1)}`:""; const a=author?`+inauthor:${JSON.stringify(author).slice(1,-1)}`:""; q=`${t}${a}`||"book"; }
-  const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1`); const j=await r.json(); const item=j.items?.[0]; const img=item?.volumeInfo?.imageLinks;
-  if(img){ return {cover:(img.thumbnail||img.smallThumbnail||"").replace("http://","https://").replace("&edge=curl","")}; } }catch{} return null;}
-async function fetchCover({title, author, isbn}){ if(isbn){ const a=await fetchOpenLibraryByIsbn(isbn); if(a?.cover) return a.cover; }
-  const b=await fetchOpenLibraryByQuery(title, author); if(b?.cover) return b.cover;
-  const c=await fetchGoogleBooks({title, author, isbn}); if(c?.cover) return c.cover;
-  return "data:image/svg+xml;utf8,"+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#2b1425'/><stop offset='1' stop-color='#ff2d8b'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#ffd9ec' font-family='Arial' font-size='22'>Sin portada</text></svg>`); }
+/* ===== Portadas: resolutor robusto ===== */
+async function imgExists(url){
+  return new Promise(res=>{
+    const i=new Image(); i.referrerPolicy="no-referrer";
+    i.onload=()=>res(true); i.onerror=()=>res(false); i.src=url;
+  });
+}
+const olIsbn = (isbn, sz="L") => `https://covers.openlibrary.org/b/isbn/${isbn}-${sz}.jpg?default=false`;
+const olId   = (id,   sz="L") => `https://covers.openlibrary.org/b/id/${id}-${sz}.jpg`;
+
+async function fetchCover({title, author, isbn}){
+  const clean=(isbn||"").replace(/[^0-9Xx]/g,"");
+  const candidates = [];
+
+  if(clean){
+    // OpenLibrary por ISBN (con default=false para evitar el 1x1 transparente)
+    candidates.push(olIsbn(clean,"L"), olIsbn(clean,"M"));
+  }
+
+  // OpenLibrary search para intentar con cover_i
+  try{
+    const qs=new URLSearchParams({q:`${title||""} ${author||""}`.trim(), limit:"3"});
+    const r=await fetch(`https://openlibrary.org/search.json?${qs}`);
+    const j=await r.json(); (j.docs||[]).slice(0,3).forEach(d=>{
+      if(d.cover_i) candidates.push(olId(d.cover_i,"L"));
+    });
+  }catch{}
+
+  // Google Books (varias calidades)
+  try{
+    let q = clean ? `isbn:${clean}` :
+      `${title?`intitle:${title}`:""}${author?`+inauthor:${author}`:""}` || "book";
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=2&printType=books`);
+    const j=await r.json();
+    (j.items||[]).forEach(it=>{
+      const g=it.volumeInfo?.imageLinks||{};
+      ['extraLarge','large','medium','thumbnail','smallThumbnail'].forEach(k=>{
+        if(g[k]) candidates.push(String(g[k]).replace("http://","https://").replace("&edge=curl",""));
+      });
+    });
+  }catch{}
+
+  // Devuelve la primera que realmente carga
+  for(const url of candidates){
+    if(url && await imgExists(url)) return url;
+  }
+
+  // Placeholder bonito
+  return "data:image/svg+xml;utf8,"+encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600'>
+      <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0' stop-color='#2b1425'/><stop offset='1' stop-color='#ff2d8b'/></linearGradient></defs>
+      <rect width='100%' height='100%' fill='url(#g)'/>
+      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
+            fill='#ffd9ec' font-family='Arial' font-size='22'>Sin portada</text></svg>`);
+}
 
 /* ===== CRUD + UI ===== */
 function addBook(b){ state.books.push(b); persist(); toast("Libro guardado ✔"); }
@@ -389,20 +445,9 @@ function openModal(id){
 $("#closeModal").addEventListener("click",()=>$("#modal").classList.remove("active"));
 $("#saveNotes").addEventListener("click",()=>{ const id=state.selectedId; if(!id) return; updateBook(id,{notes:$("#modalNotes").value}); $("#modal").classList.remove("active"); toast("Notas guardadas"); });
 $("#markRead").addEventListener("click",()=>{ const id=state.selectedId; if(!id) return; const b=state.books.find(x=>x.id===id); updateBook(id,{status:"read",rating:b.rating||5}); $("#modal").classList.remove("active"); if(state.route.startsWith("#/library")) renderLibrary(); toast("Marcado como leído"); });
-
-// select de estado en modal
-$("#modalStatusSel").addEventListener("change",(e)=>{
-  const id=state.selectedId; if(!id) return;
-  updateBook(id,{status:e.target.value}); toast("Estado actualizado");
-  if(state.route.startsWith("#/library")) renderLibrary();
-});
-// autosave notas (debounce)
+$("#modalStatusSel").addEventListener("change",(e)=>{ const id=state.selectedId; if(!id) return; updateBook(id,{status:e.target.value}); toast("Estado actualizado"); if(state.route.startsWith("#/library")) renderLibrary(); });
 let notesTimer=null;
-$("#modalNotes").addEventListener("input", ()=>{
-  const id=state.selectedId; if(!id) return;
-  clearTimeout(notesTimer);
-  notesTimer=setTimeout(()=>{ updateBook(id,{notes:$("#modalNotes").value}); toast("Notas guardadas"); }, 550);
-});
+$("#modalNotes").addEventListener("input", ()=>{ const id=state.selectedId; if(!id) return; clearTimeout(notesTimer); notesTimer=setTimeout(()=>{ updateBook(id,{notes:$("#modalNotes").value}); toast("Notas guardadas"); }, 550); });
 
 /* Export/Import/Reset */
 $("#exportBtnPanel").addEventListener("click",exportJson); $("#importFilePanel").addEventListener("change",importJson);
@@ -426,10 +471,7 @@ function renderStats(){ const area=$("#statsArea"); const total=state.books.leng
 let codeReader=null, currentStream=null, devices=[], currentIndex=-1, imageCapture=null, torchOn=false;
 const CAM_KEY='book-tracker-lastCameraId';
 const scanModal=$("#scanModal"), videoEl=$("#video"), torchBtn=$("#torchBtn");
-
-// ayuda plegable
-const helpSheet=$("#helpSheet");
-helpSheet.querySelector(".help-head").addEventListener("click",()=>helpSheet.classList.toggle("open"));
+const helpSheet=$("#helpSheet"); helpSheet.querySelector(".help-head").addEventListener("click",()=>helpSheet.classList.toggle("open"));
 
 $("#scanBtn")?.addEventListener("click", openScan);
 $("#closeScan")?.addEventListener("click", stopScan);
@@ -441,8 +483,6 @@ $("#flipCam")?.addEventListener("click", async ()=>{
   await startDecoding();
   try{ localStorage.setItem(CAM_KEY, devices[currentIndex].deviceId); }catch{}
 });
-
-// Linterna (cuando soporte)
 torchBtn.addEventListener("click", async ()=>{
   if(!imageCapture){ toast("Linterna no disponible"); return; }
   try{
@@ -456,23 +496,19 @@ torchBtn.addEventListener("click", async ()=>{
 async function openScan(){
   if(!(location.protocol==='https:' || location.hostname==='localhost')){ alert('Usa una URL HTTPS para abrir la cámara.'); return; }
   if(!navigator.mediaDevices?.getUserMedia){ alert('Tu navegador no soporta cámara.'); return; }
-
   scanModal.classList.add("active");
   try{
     const warmup = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact:'environment' } } })
       .catch(()=> navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } }))
       .catch(()=> navigator.mediaDevices.getUserMedia({ video:true }));
     if(warmup){ attachStream(warmup); currentStream=warmup; }
-
     devices = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
-
     const saved = (()=>{ try{ return localStorage.getItem(CAM_KEY)||'' }catch{ return '' }})();
     let preferId = saved && devices.some(d=>d.deviceId===saved) ? saved : null;
     if(!preferId){
       const back = devices.find(d=>/back|rear|environment|traser|trás/i.test(d.label));
       preferId = back?.deviceId || (devices[devices.length-1]||devices[0])?.deviceId;
     }
-
     await startCameraByDeviceId(preferId);
     await startDecoding();
   }catch(err){
@@ -480,21 +516,12 @@ async function openScan(){
     alert('No se pudo abrir la cámara. Revisa permisos del sitio.\n'+(err.message||'')); stopScan();
   }
 }
-
 function attachStream(stream){
   videoEl.setAttribute('playsinline','true');
-  videoEl.setAttribute('autoplay','true');
-  videoEl.setAttribute('muted','true');
-  videoEl.setAttribute('webkit-playsinline','true');
-  videoEl.muted=true;
-  videoEl.srcObject=stream;
-  videoEl.play?.();
-  try{
-    const track=stream.getVideoTracks()[0];
-    imageCapture = ('ImageCapture' in window) ? new ImageCapture(track) : null;
-  }catch{ imageCapture=null; }
+  videoEl.setAttribute('autoplay','true'); videoEl.setAttribute('muted','true'); videoEl.setAttribute('webkit-playsinline','true');
+  videoEl.muted=true; videoEl.srcObject=stream; videoEl.play?.();
+  try{ const track=stream.getVideoTracks()[0]; imageCapture = ('ImageCapture' in window) ? new ImageCapture(track) : null; }catch{ imageCapture=null; }
 }
-
 async function startCameraByDeviceId(deviceId){
   stopCamera();
   const constraints = deviceId ? { video:{ deviceId:{ exact:deviceId } } } : { video:{ facingMode:'environment' } };
@@ -506,14 +533,12 @@ async function startCameraByDeviceId(deviceId){
   currentIndex = Math.max(0, devices.findIndex(d=>d.deviceId===deviceId));
   torchOn=false; torchBtn.textContent="Linterna";
 }
-
 let stopDetector=null;
 async function startDecoding(){
   if('BarcodeDetector' in window){
     const formats = ['ean_13','isbn_13','ean_8','upc_a','code_128'];
     let detector; try{ detector=new BarcodeDetector({formats}); }catch{ detector=new BarcodeDetector(); }
     let running=true; stopDetector=()=>{ running=false; };
-
     const loop = async ()=>{
       if(!running) return;
       try{
@@ -523,10 +548,7 @@ async function startDecoding(){
           const isbn = normalizeIsbnCandidate(raw);
           if(isbn){ await onIsbnDetected(isbn); return; }
         }
-      }catch(e){
-        console.warn('BarcodeDetector falló, se usará ZXing', e);
-        running=false; await startZXing(); return;
-      }
+      }catch(e){ running=false; await startZXing(); return; }
       requestAnimationFrame(loop);
     };
     loop();
@@ -534,7 +556,6 @@ async function startDecoding(){
     await startZXing();
   }
 }
-
 async function startZXing(){
   if(!codeReader){
     const hints = new Map();
@@ -549,8 +570,6 @@ async function startZXing(){
     }
   });
 }
-
-/* ===== ISBN helpers ===== */
 function normalizeIsbnCandidate(s){
   const digits = String(s||"").replace(/\D/g,"");
   if(digits.length < 12) return null;
@@ -563,7 +582,6 @@ function isValidIsbn13(v){
   let sum=0; for(let i=0;i<12;i++){ sum += (i%2?3:1)*Number(v[i]); }
   return ((10-(sum%10))%10) === Number(v[12]);
 }
-
 let handling=false;
 async function onIsbnDetected(isbn){
   if(handling) return; handling=true;
@@ -571,20 +589,13 @@ async function onIsbnDetected(isbn){
     await autorrellenarPorISBN(isbn);
     toast("ISBN detectado ✔");
     stopScan();
-  }catch(e){
-    console.warn('autorrellenar error:',e); alert('Se leyó el código, pero no se pudo completar.');
-  }finally{ handling=false; }
+  }catch(e){ console.warn('autorrellenar error:',e); alert('Se leyó el código, pero no se pudo completar.'); }
+  finally{ handling=false; }
 }
-
 function stopScan(){
-  stopCamera();
-  try{ stopDetector?.(); }catch{}
-  try{ codeReader?.reset(); }catch{}
-  scanModal.classList.remove("active");
+  stopCamera(); try{ stopDetector?.(); }catch{} try{ codeReader?.reset(); }catch{} scanModal.classList.remove("active");
 }
-function stopCamera(){
-  try{ if(currentStream){ currentStream.getTracks().forEach(t=>t.stop()); currentStream=null; } videoEl.srcObject=null; videoEl.pause?.(); }catch{}
-}
+function stopCamera(){ try{ if(currentStream){ currentStream.getTracks().forEach(t=>t.stop()); currentStream=null; } videoEl.srcObject=null; videoEl.pause?.(); }catch{} }
 
 /* ===== Autorrellenar por ISBN ===== */
 async function autorrellenarPorISBN(isbn){
@@ -603,13 +614,9 @@ async function autorrellenarPorISBN(isbn){
     alert("No se encontraron datos para ese ISBN.");
   }
 }
-
-/* === Lookup OpenLibrary + Google Books === */
 async function lookupByIsbn(isbn){
   const clean = (isbn||"").replace(/[^0-9Xx]/g,"");
   if(!clean) return null;
-
-  // 1) OpenLibrary /isbn/{isbn}.json
   try{
     const r = await fetch(`https://openlibrary.org/isbn/${clean}.json`);
     if(r.ok){
@@ -619,40 +626,22 @@ async function lookupByIsbn(isbn){
         try{ const ra = await fetch(`https://openlibrary.org${d.authors[0].key}.json`);
              if(ra.ok){ const ja=await ra.json(); author=ja.name||""; } }catch{}
       }
-      return {
-        title: d.title||"", author,
-        cover: `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
-        publisher: d.publishers?.[0]||"", year: d.publish_date||"", pages: d.number_of_pages||""
-      };
+      return { title:d.title||"", author, cover: olIsbn(clean,"L"), publisher:d.publishers?.[0]||"", year:d.publish_date||"", pages:d.number_of_pages||"" };
     }
   }catch{}
-
-  // 2) OpenLibrary API books?bibkeys
   try{
     const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${clean}&format=json&jscmd=data`);
     const j=await r.json(); const k=j[`ISBN:${clean}`];
     if(k){ 
-      return {
-        title:k.title||"",
-        author:k.authors?.[0]?.name||"",
-        cover:k.cover?.large||`https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
-        publisher:k.publishers?.[0]?.name||"",
-        year:k.publish_date||"", pages:k.number_of_pages||""
-      }; 
+      return { title:k.title||"", author:k.authors?.[0]?.name||"", cover:k.cover?.large||olIsbn(clean,"L"), publisher:k.publishers?.[0]?.name||"", year:k.publish_date||"", pages:k.number_of_pages||"" };
     }
   }catch{}
-
-  // 3) Google Books
   try{
     const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${clean}&maxResults=1&printType=books`);
     const j=await r.json(); const it=j.items?.[0];
     if(it){
       const vi=it.volumeInfo||{}, img=vi.imageLinks||{};
-      return {
-        title: vi.title||"", author: (vi.authors?.[0])||"",
-        cover: (img.thumbnail||img.smallThumbnail||"").replace("http://","https://"),
-        publisher: vi.publisher||"", year: vi.publishedDate||"", pages: vi.pageCount||""
-      };
+      return { title:vi.title||"", author:(vi.authors?.[0])||"", cover:(img.extraLarge||img.large||img.medium||img.thumbnail||img.smallThumbnail||"").replace("http://","https://"), publisher:vi.publisher||"", year:vi.publishedDate||"", pages:vi.pageCount||"" };
     }
   }catch{}
   return null;
@@ -672,7 +661,7 @@ $("#addBtn").addEventListener("click",async (e)=>{ e.preventDefault();
 
 /* Enviar a Sheets (opcional) */
 async function sendToSheets(book){
-  if(!SHEETS_URL || SHEETS_URL.includes("script.google.com/macros/library")) return;
+  if(!SHEETS_URL) return;
   const form=new URLSearchParams();
   form.set('action','add');
   form.set('book', JSON.stringify({ ...book, createdAt:new Date().toISOString() }));
@@ -683,24 +672,18 @@ async function sendToSheets(book){
 $("#q").addEventListener("input", e=>{ state.q=e.target.value||""; renderLibrary(); });
 renderRoute();
 
-/* ===== PWA: registrar SW e instalar ===== */
+/* ===== PWA ===== */
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>navigator.serviceWorker.register('./service-worker.js'));
 }
-
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt', (e)=>{
-  e.preventDefault();
-  deferredPrompt = e;
-  $("#installBtn").style.display="block";
+  e.preventDefault(); deferredPrompt = e; $("#installBtn").style.display="block";
 });
 $("#installBtn").addEventListener('click', async ()=>{
   if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  if(outcome==='accepted') toast("Instalada ✔");
-  $("#installBtn").style.display="none";
-  deferredPrompt=null;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  $("#installBtn").style.display="none"; deferredPrompt=null; toast("Instalada ✔");
 });
 </script>
 </body>
