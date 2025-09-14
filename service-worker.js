@@ -1,4 +1,4 @@
-const CACHE_NAME = "biblio-rosa-v4";
+const CACHE_NAME = "biblio-rosa-v5";
 const APP_SHELL = [
   "./",
   "./index.html",

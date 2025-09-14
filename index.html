@@ -11,10 +11,8 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<!-- (opcional) evitar políticas raras de cámara en iframes -->
 <meta http-equiv="Permissions-Policy" content="camera=*, interest-cohort=()"/>
 
-<!-- Favicon simple -->
 <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
 
 <style>
@@ -107,6 +105,13 @@
   .scanner-corners::before{ inset:auto auto 14% 8%; border-right:0; border-top:0; border-radius:0 0 0 10px;}
   .scanner-corners::after{ inset:14% 8% auto auto; border-left:0; border-bottom:0; border-radius:10px 0 0 0;}
   .scanner-text{ position:absolute; top:10%; width:100%; text-align:center; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.6); font-weight:700}
+
+  /* controles de cámara */
+  .scan-controls{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .zoom-wrap{display:flex; align-items:center; gap:6px}
+  .zoom-wrap input[type="range"]{width:140px}
+  .scan-badge{font-size:.75rem; padding:3px 8px; border-radius:999px; background:#2d1124; border:1px solid #4a1f3c; color:#ffd9ec}
+
   .help-sheet{ background:#2b1425; border:1px solid #4a1f3c; border-radius:12px; padding:10px; }
   .help-head{display:flex; align-items:center; gap:8px; cursor:pointer}
   .help-body{display:none; margin-top:6px; color:#ffd9ec;}
@@ -268,10 +273,18 @@
 
 <!-- MODAL ESCÁNER -->
 <div class="modal" id="scanModal">
-  <div class="modal-card" style="width:min(95vw,520px)">
-    <div class="modal-head"><h3>Escanear ISBN</h3>
-      <div style="display:flex; gap:8px; align-items:center">
+  <div class="modal-card" style="width:min(95vw,560px)">
+    <div class="modal-head">
+      <h3>Escanear ISBN</h3>
+      <div class="scan-controls">
+        <span class="scan-badge" id="engineBadge">Auto</span>
+        <button class="btn secondary" id="enhanceBtn" title="Mejora">Mejora</button>
         <button class="btn secondary" id="torchBtn" title="Linterna">Linterna</button>
+        <div class="zoom-wrap" id="zoomWrap" style="display:none">
+          <button class="iconbtn" id="zoomOut" title="Zoom -">−</button>
+          <input type="range" id="zoomRange" min="1" max="1" step="0.1" value="1"/>
+          <button class="iconbtn" id="zoomIn" title="Zoom +">+</button>
+        </div>
         <button class="btn secondary" id="photoBtn" title="Usar foto">Usar foto</button>
         <button class="iconbtn" id="closeScan" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
@@ -281,11 +294,13 @@
         <video id="video" autoplay muted playsinline webkit-playsinline style="width:100%; border-radius:12px; background:#000"></video>
         <div class="scanner-overlay">
           <div class="scanner-text" id="scanHint">Escanea el código de barras</div>
-          <div class="scanner-frame scanner-corners"></div>
+          <div class="scanner-frame scanner-corners" id="roiFrame"></div>
         </div>
       </div>
 
       <input id="photoInput" type="file" accept="image/*" capture="environment" hidden />
+      <!-- canvas oculto para ROI / preproceso -->
+      <canvas id="roiCanvas" width="640" height="360" style="display:none"></canvas>
 
       <div class="help-sheet" id="helpSheet" style="margin-top:10px">
         <div class="help-head">
@@ -294,8 +309,8 @@
         </div>
         <div class="help-body">
           <ul style="margin:8px 0 0 18px">
-            <li>Apunta al código de barras de la contraportada.</li>
-            <li>Activa la <em>linterna</em> si hay poca luz (si tu teléfono lo permite).</li>
+            <li>Alinea el código dentro del marco. Mejor centrado y a 15–25cm.</li>
+            <li>Usa la <em>linterna</em> y el <em>zoom</em> si lo soporta tu dispositivo.</li>
             <li>Si la cámara no abre en la PWA, usa <strong>Usar foto</strong> o abre en Safari/Chrome.</li>
           </ul>
         </div>
@@ -312,7 +327,7 @@
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 <script>
 /* ===== CONFIG ===== */
-const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwQKismwlGoG2UpKFG5EPlkyLgPkPnDl--hvYMdfBhu_EV6cRaX8NoBCXN9N5MG9DJ5/exec"; // Apps Script (opcional)
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwQKismwlGoG2UpKFG5EPlkyLgPkPnDl--hvYMdfBhu_EV6cRaX8NoBCXN9N5MG9DJ5/exec";
 const KEY = "book-tracker-v1";
 
 /* ===== Utils ===== */
@@ -341,44 +356,22 @@ function renderRoute(){
 window.addEventListener("hashchange", ()=>{ state.route=location.hash||"#/panel"; renderRoute(); });
 document.addEventListener("click",(e)=>{ const r=e.target.closest("[data-route]"); if(r){e.preventDefault(); go(r.dataset.route);} });
 
-/* ===== Portadas: resolutor robusto ===== */
-async function imgExists(url){
-  return new Promise(res=>{
-    const i=new Image(); i.referrerPolicy="no-referrer";
-    i.onload=()=>res(true); i.onerror=()=>res(false); i.src=url;
-  });
-}
+/* ===== Portadas ===== */
+async function imgExists(url){ return new Promise(res=>{ const i=new Image(); i.referrerPolicy="no-referrer"; i.onload=()=>res(true); i.onerror=()=>res(false); i.src=url; }); }
 const olIsbn = (isbn, sz="L") => `https://covers.openlibrary.org/b/isbn/${isbn}-${sz}.jpg?default=false`;
 const olId   = (id,   sz="L") => `https://covers.openlibrary.org/b/id/${id}-${sz}.jpg`;
-
 async function fetchCover({title, author, isbn}){
-  const clean=(isbn||"").replace(/[^0-9Xx]/g,"");
-  const candidates = [];
+  const clean=(isbn||"").replace(/[^0-9Xx]/g,""); const candidates=[];
   if(clean){ candidates.push(olIsbn(clean,"L"), olIsbn(clean,"M")); }
-  try{
-    const qs=new URLSearchParams({q:`${title||""} ${author||""}`.trim(), limit:"3"});
-    const r=await fetch(`https://openlibrary.org/search.json?${qs}`);
-    const j=await r.json(); (j.docs||[]).slice(0,3).forEach(d=>{ if(d.cover_i) candidates.push(olId(d.cover_i,"L")); });
-  }catch{}
-  try{
-    let q = clean ? `isbn:${clean}` : `${title?`intitle:${title}`:""}${author?`+inauthor:${author}`:""}` || "book";
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=2&printType=books`);
-    const j=await r.json();
-    (j.items||[]).forEach(it=>{
-      const g=it.volumeInfo?.imageLinks||{};
-      ['extraLarge','large','medium','thumbnail','smallThumbnail'].forEach(k=>{
-        if(g[k]) candidates.push(String(g[k]).replace("http://","https://").replace("&edge=curl",""));
-      });
-    });
-  }catch{}
+  try{ const qs=new URLSearchParams({q:`${title||""} ${author||""}`.trim(), limit:"3"});
+       const r=await fetch(`https://openlibrary.org/search.json?${qs}`); const j=await r.json();
+       (j.docs||[]).slice(0,3).forEach(d=>{ if(d.cover_i) candidates.push(olId(d.cover_i,"L")); }); }catch{}
+  try{ let q = clean ? `isbn:${clean}` : `${title?`intitle:${title}`:""}${author?`+inauthor:${author}`:""}` || "book";
+       const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=2&printType=books`);
+       const j=await r.json(); (j.items||[]).forEach(it=>{ const g=it.volumeInfo?.imageLinks||{};
+         ['extraLarge','large','medium','thumbnail','smallThumbnail'].forEach(k=>{ if(g[k]) candidates.push(String(g[k]).replace("http://","https://").replace("&edge=curl","")); }); }); }catch{}
   for(const url of candidates){ if(url && await imgExists(url)) return url; }
-  return "data:image/svg+xml;utf8,"+encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600'>
-      <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-      <stop offset='0' stop-color='#2b1425'/><stop offset='1' stop-color='#ff2d8b'/></linearGradient></defs>
-      <rect width='100%' height='100%' fill='url(#g)'/>
-      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
-            fill='#ffd9ec' font-family='Arial' font-size='22'>Sin portada</text></svg>`);
+  return "data:image/svg+xml;utf8,"+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#2b1425'/><stop offset='1' stop-color='#ff2d8b'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#ffd9ec' font-family='Arial' font-size='22'>Sin portada</text></svg>`);
 }
 
 /* ===== CRUD + UI ===== */
@@ -456,10 +449,14 @@ function renderStats(){ const area=$("#statsArea"); const total=state.books.leng
     <div class="card"><h3>Leídos</h3><p style="font-size:1.8rem;margin:.2rem 0">${st["read"]}</p></div>
     <div class="card"><h3>Promedio ⭐</h3><p style="font-size:1.8rem;margin:.2rem 0">${avg}</p></div></div>`; }
 
-/* ===== Escáner (mejorado para PWA) ===== */
+/* ===== Escáner PRO ===== */
 let codeReader=null, currentStream=null, devices=[], currentIndex=-1, imageCapture=null, torchOn=false;
 const CAM_KEY='book-tracker-lastCameraId';
-const scanModal=$("#scanModal"), videoEl=$("#video"), torchBtn=$("#torchBtn"), photoBtn=$("#photoBtn"), photoInput=$("#photoInput"), scanHint=$("#scanHint");
+const scanModal=$("#scanModal"), videoEl=$("#video"), torchBtn=$("#torchBtn"), photoBtn=$("#photoBtn"), photoInput=$("#photoInput"), scanHint=$("#scanHint"), engineBadge=$("#engineBadge");
+const roiCanvas=$("#roiCanvas"), roiCtx=roiCanvas.getContext('2d',{willReadFrequently:true});
+const roiFrame=$("#roiFrame");
+const enhanceBtn=$("#enhanceBtn"); let enhance=false;
+const zoomWrap=$("#zoomWrap"), zoomRange=$("#zoomRange"), zoomIn=$("#zoomIn"), zoomOut=$("#zoomOut");
 const helpSheet=$("#helpSheet"); helpSheet.querySelector(".help-head").addEventListener("click",()=>helpSheet.classList.toggle("open"));
 
 /* Botones */
@@ -474,7 +471,7 @@ $("#flipCam")?.addEventListener("click", async ()=>{
   try{ localStorage.setItem(CAM_KEY, devices[currentIndex].deviceId); }catch{}
 });
 torchBtn.addEventListener("click", async ()=>{
-  if(!imageCapture){ toast("Linterna no disponible"); return; }
+  if(!imageCapture || !currentStream){ toast("Linterna no disponible"); return; }
   try{
     torchOn=!torchOn;
     const track=currentStream.getVideoTracks()[0];
@@ -482,14 +479,14 @@ torchBtn.addEventListener("click", async ()=>{
     torchBtn.textContent = torchOn ? "Linterna (ON)" : "Linterna";
   }catch{ toast("No se pudo activar la linterna"); }
 });
+enhanceBtn.addEventListener("click", ()=>{ enhance=!enhance; enhanceBtn.textContent = enhance ? "Mejora (ON)" : "Mejora"; });
 
-/* Fallback: usar foto si el stream falla (ideal para PWA iOS viejas) */
 photoBtn.addEventListener("click", ()=> photoInput.click());
 photoInput.addEventListener("change", async (e)=>{
   const file=e.target.files?.[0]; if(!file) return;
   try{
     const imgURL = URL.createObjectURL(file);
-    if(!codeReader) codeReader = new ZXing.BrowserMultiFormatReader();
+    if(!codeReader) initZXing();
     const res = await codeReader.decodeFromImageUrl(imgURL);
     const isbn = normalizeIsbnCandidate(String(res?.text||""));
     if(isbn){ await onIsbnDetected(isbn); } else alert("No se pudo leer el código de barras de la foto.");
@@ -497,7 +494,7 @@ photoInput.addEventListener("change", async (e)=>{
   }catch(err){ alert("No se pudo leer el código de la foto."); console.warn(err); }
 });
 
-/* Explicador de errores */
+/* Errores getUserMedia */
 function explainGetUserMediaError(err){
   const n = err && (err.name || err.toString());
   let msg = "No se pudo abrir la cámara.";
@@ -505,17 +502,17 @@ function explainGetUserMediaError(err){
     case "NotAllowedError":
     case "PermissionDismissedError":
       msg += "\nPermiso denegado. Habilítalo en los permisos del sitio.";
-      if(isStandaloneIOS()) msg += "\nEn iPhone desde el icono (PWA), si no abre, prueba en Safari o actualiza iOS (16.4+).";
+      if(isStandaloneIOS()) msg += "\nEn iPhone (PWA), si no abre, prueba en Safari o actualiza iOS (16.4+).";
       break;
     case "NotFoundError":
     case "DevicesNotFoundError":
       msg += "\nNo se encontró cámara o está en uso por otra app.";
       break;
     case "NotReadableError":
-      msg += "\nLa cámara está en uso por otra app. Ciérrala e inténtalo de nuevo.";
+      msg += "\nLa cámara está en uso por otra app. Ciérrala e inténtalo nuevamente.";
       break;
     case "OverconstrainedError":
-      msg += "\nLas restricciones no se pueden cumplir. Se probará modo simple.";
+      msg += "\nRestricciones incompatibles. Probando modo simple.";
       break;
     case "SecurityError":
       msg += "\n¿Estás en HTTPS? La cámara requiere un origen seguro.";
@@ -537,106 +534,164 @@ function isStandaloneIOS(){
 async function openScan(){
   if(!(location.protocol==='https:' || location.hostname==='localhost')){ alert('Usa una URL HTTPS para abrir la cámara.'); return; }
   if(!navigator.mediaDevices?.getUserMedia){ alert('Tu navegador no soporta cámara.'); return; }
-
   scanModal.classList.add("active");
-  if(isStandaloneIOS()){
-    scanHint.textContent = "Si la cámara no abre en la PWA, usa “Usar foto” o ábrelo en Safari.";
-  } else {
-    scanHint.textContent = "Escanea el código de barras";
-  }
-
+  scanHint.textContent = isStandaloneIOS() ? "Si la cámara no abre en la PWA, usa “Usar foto” o abre en Safari." : "Escanea el código de barras";
+  engineBadge.textContent = "Auto";
   try{
-    /* Primer intento: restricciones suaves para disparar prompt y evitar fallos de PWA */
-    const warmup = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal:'environment' } }
-    }).catch(async (e)=>{
-      try { return await navigator.mediaDevices.getUserMedia({ video:true }); }
-      catch { throw e; }
-    });
-
-    if(warmup){ attachStream(warmup); currentStream=warmup; }
-
+    const warm = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal:'environment' },
+        width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 },
+        advanced: [{ focusMode: "continuous" }]
+      }
+    }).catch(async (e)=>{ try { return await navigator.mediaDevices.getUserMedia({ video:true }); } catch { throw e; }});
+    if(warm){ attachStream(warm); currentStream=warm; }
     devices = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
-
-    let preferId = null;
-    const saved = (()=>{ try{ return localStorage.getItem(CAM_KEY)||'' }catch{ return '' }})();
+    let preferId=null; const saved=(()=>{ try{return localStorage.getItem(CAM_KEY)||''}catch{return''}})();
     if(saved && devices.some(d=>d.deviceId===saved)) preferId=saved;
-    if(!preferId){
-      const back = devices.find(d=>/back|rear|environment|traser|trás/i.test(d.label));
-      preferId = back?.deviceId || (devices[devices.length-1]||devices[0])?.deviceId;
-    }
-
+    if(!preferId){ const back=devices.find(d=>/back|rear|environment|traser|trás/i.test(d.label)); preferId=back?.deviceId || (devices.at(-1)||devices[0])?.deviceId; }
     await startCameraByDeviceId(preferId);
     await startDecoding();
-  }catch(err){
-    console.warn('openScan error:', err);
-    explainGetUserMediaError(err);
-    // no cierro el modal para que el usuario pueda usar "Usar foto"
-  }
+  }catch(err){ console.warn('openScan error:', err); explainGetUserMediaError(err); }
 }
 
 function attachStream(stream){
-  videoEl.setAttribute('playsinline','true');
-  videoEl.setAttribute('autoplay','true'); videoEl.setAttribute('muted','true'); videoEl.setAttribute('webkit-playsinline','true');
+  videoEl.setAttribute('playsinline','true'); videoEl.setAttribute('autoplay','true'); videoEl.setAttribute('muted','true'); videoEl.setAttribute('webkit-playsinline','true');
   videoEl.muted=true; videoEl.srcObject=stream; videoEl.play?.();
-  try{ const track=stream.getVideoTracks()[0]; imageCapture = ('ImageCapture' in window) ? new ImageCapture(track) : null; }catch{ imageCapture=null; }
+  try{ const track=stream.getVideoTracks()[0]; imageCapture=('ImageCapture' in window)? new ImageCapture(track):null; setupZoom(track); }catch{ imageCapture=null; }
 }
 
 async function startCameraByDeviceId(deviceId){
   stopCamera();
-  const tryConstraints = async (c) => {
-    try { return await navigator.mediaDevices.getUserMedia(c); }
-    catch { return null; }
-  };
-  let stream = await tryConstraints({ video:{ deviceId: deviceId ? { ideal:deviceId } : undefined, facingMode:{ ideal:'environment' } } });
-  if(!stream) stream = await tryConstraints({ video:{ facingMode:{ ideal:'environment' } } });
-  if(!stream) stream = await tryConstraints({ video:true });
+  const tryC = async (c)=>{ try{ return await navigator.mediaDevices.getUserMedia(c); }catch{ return null; } };
+  let stream = await tryC({ video:{
+    deviceId: deviceId ? { ideal:deviceId } : undefined,
+    facingMode:{ ideal:'environment' },
+    width:{ ideal:1920 }, height:{ ideal:1080 }, frameRate:{ ideal:30, max:30 },
+    advanced:[{ focusMode:"continuous" }]
+  }});
+  if(!stream) stream = await tryC({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }});
+  if(!stream) stream = await tryC({ video:true });
   if(!stream) throw new Error('NotFoundError');
   currentStream=stream; attachStream(stream);
   currentIndex = Math.max(0, devices.findIndex(d=>d.deviceId===deviceId));
   torchOn=false; torchBtn.textContent="Linterna";
 }
 
-let stopDetector=null;
+/* Zoom si está soportado */
+function setupZoom(track){
+  try{
+    const caps = track.getCapabilities?.(); const settings=track.getSettings?.()||{};
+    if(caps?.zoom){
+      zoomWrap.style.display="flex";
+      zoomRange.min = caps.zoom.min ?? 1;
+      zoomRange.max = caps.zoom.max ?? Math.max(1, (settings.zoom||1));
+      zoomRange.step = caps.zoom.step ?? 0.1;
+      zoomRange.value = settings.zoom || zoomRange.min;
+      const apply = (v)=> track.applyConstraints({ advanced:[{ zoom: Math.max(zoomRange.min, Math.min(zoomRange.max, v)) }] });
+      zoomRange.oninput = e=> apply(parseFloat(e.target.value));
+      zoomIn.onclick = ()=> apply(parseFloat(zoomRange.value)+parseFloat(zoomRange.step));
+      zoomOut.onclick= ()=> apply(parseFloat(zoomRange.value)-parseFloat(zoomRange.step));
+    }else{
+      zoomWrap.style.display="none";
+    }
+  }catch{ zoomWrap.style.display="none"; }
+}
+
+/* ROI helpers */
+function computeRoi(){
+  const vw = videoEl.videoWidth || 1280, vh = videoEl.videoHeight || 720;
+  // ROI centrado tipo franja (códigos 1D): 70% ancho x 35% alto
+  const rw = Math.floor(vw * 0.70), rh = Math.floor(vh * 0.35);
+  const rx = Math.floor((vw - rw)/2), ry = Math.floor((vh - rh)/2);
+  return {rx, ry, rw, rh};
+}
+
+function drawToCanvas(enh=false){
+  const {rx, ry, rw, rh} = computeRoi();
+  const scale = 0.66; // escalar para acelerar decode
+  const cw = Math.max(320, Math.floor(rw*scale)), ch = Math.max(180, Math.floor(rh*scale));
+  roiCanvas.width=cw; roiCanvas.height=ch;
+  roiCtx.drawImage(videoEl, rx, ry, rw, rh, 0, 0, cw, ch);
+  if(enh){
+    // gris + boost contraste
+    const img = roiCtx.getImageData(0,0,cw,ch);
+    const d = img.data; let avg=0;
+    for(let i=0;i<d.length;i+=4){ const g=(d[i]*0.2126 + d[i+1]*0.7152 + d[i+2]*0.0722)|0; d[i]=d[i+1]=d[i+2]=g; avg+=g; }
+    avg/= (d.length/4);
+    const gain = 1.35; const bias = -avg*0.15;
+    for(let i=0;i<d.length;i+=4){ let g=d[i]*gain + bias; g=g<0?0:g>255?255:g; d[i]=d[i+1]=d[i+2]=g; }
+    roiCtx.putImageData(img,0,0);
+  }
+  return roiCanvas;
+}
+
+/* Decodificación híbrida (BarcodeDetector -> ZXing) */
+let stopDetector=null, decoding=false;
 async function startDecoding(){
-  if('BarcodeDetector' in window){
-    const formats = ['ean_13','isbn_13','ean_8','upc_a','code_128'];
-    let detector; try{ detector=new BarcodeDetector({formats}); }catch{ detector=new BarcodeDetector(); }
-    let running=true; stopDetector=()=>{ running=false; };
-    const loop = async ()=>{
-      if(!running) return;
+  if(decoding) return; decoding=true;
+  const hasBD = 'BarcodeDetector' in window;
+  if(hasBD){ engineBadge.textContent="BD"; } else { engineBadge.textContent="ZXing"; }
+
+  const useZXing = async ()=>{
+    if(!codeReader) initZXing();
+    engineBadge.textContent="ZXing";
+    try{ codeReader.reset(); }catch{}
+    // loop manual con ROI (mejor que decodeFromVideoElementContinuously para canvas ROI)
+    const step = async ()=>{
+      if(!decoding) return;
+      const canv = drawToCanvas(enhance);
       try{
-        const codes = await detector.detect(videoEl);
-        if(codes && codes.length){
-          const raw = (codes[0].rawValue||"");
+        const res = await codeReader.decodeFromCanvas(canv);
+        if(res){
+          const isbn = normalizeIsbnCandidate(String(res?.text||""));
+          if(isbn){ await onIsbnDetected(isbn); return; }
+        }
+      }catch{} // ignore until found
+      schedule(step);
+    };
+    schedule(step);
+  };
+
+  if(hasBD){
+    let detector; try{ detector=new BarcodeDetector({formats:['ean_13','isbn_13','ean_8','upc_a','code_128']}); }catch{ detector=new BarcodeDetector(); }
+    stopDetector=()=>{ decoding=false; };
+    const tick = async ()=>{
+      if(!decoding) return;
+      const canv = drawToCanvas(enhance);
+      try{
+        const codes = await detector.detect(canv);
+        if(codes?.length){
+          const raw = codes[0].rawValue||"";
           const isbn = normalizeIsbnCandidate(raw);
           if(isbn){ await onIsbnDetected(isbn); return; }
         }
-      }catch(e){ running=false; await startZXing(); return; }
-      requestAnimationFrame(loop);
+      }catch(e){
+        // Si falla BD, salto a ZXing
+        decoding=false; return useZXing();
+      }
+      schedule(tick);
     };
-    loop();
+    schedule(tick);
   }else{
-    await startZXing();
+    await useZXing();
   }
 }
-
-async function startZXing(){
-  if(!codeReader){
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.ISBN, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A]);
-    codeReader = new ZXing.BrowserMultiFormatReader(hints);
+function schedule(fn){
+  if('requestVideoFrameCallback' in HTMLVideoElement.prototype){
+    videoEl.requestVideoFrameCallback(()=>fn());
+  }else{
+    setTimeout(fn, 40); // ~25fps
   }
-  try{ codeReader.reset(); }catch{}
-  await codeReader.decodeFromVideoElementContinuously(videoEl, async (result, err)=>{
-    if(result){
-      const isbn = normalizeIsbnCandidate(String(result.getText()||""));
-      if(isbn){ await onIsbnDetected(isbn); }
-    }
-  });
+}
+function initZXing(){
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.ISBN, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.CODE_128]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  codeReader = new ZXing.BrowserMultiFormatReader(hints);
 }
 
-/* Helpers ISBN */
+/* ISBN helpers */
 function normalizeIsbnCandidate(s){
   const digits = String(s||"").replace(/\D/g,"");
   if(digits.length < 12) return null;
@@ -662,7 +717,9 @@ async function onIsbnDetected(isbn){
 }
 
 function stopScan(){
-  stopCamera(); try{ stopDetector?.(); }catch{} try{ codeReader?.reset(); }catch{} scanModal.classList.remove("active");
+  decoding=false;
+  stopCamera(); try{ stopDetector?.(); }catch{} try{ codeReader?.reset(); }catch{}
+  scanModal.classList.remove("active");
 }
 function stopCamera(){ try{ if(currentStream){ currentStream.getTracks().forEach(t=>t.stop()); currentStream=null; } videoEl.srcObject=null; videoEl.pause?.(); }catch{} }
 
