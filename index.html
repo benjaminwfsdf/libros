@@ -78,18 +78,10 @@
 
   /* ===== Overlay del escáner estilo Falabella ===== */
   .scanner-wrap{position:relative; width:100%;}
-  .scanner-overlay{
-    position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;
-  }
-  .scanner-frame{
-    width:82%; max-width:520px; aspect-ratio:1.8/1; border-radius:16px;
-    outline:2px solid rgba(255,255,255,.26);
-    box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);
-  }
-  .scanner-corners::before,
-  .scanner-corners::after{
-    content:""; position:absolute; width:28px; height:28px; border:3px solid #fff; opacity:.9;
-  }
+  .scanner-overlay{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none;}
+  .scanner-frame{width:82%; max-width:520px; aspect-ratio:1.8/1; border-radius:16px;
+                 outline:2px solid rgba(255,255,255,.26); box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);}
+  .scanner-corners::before,.scanner-corners::after{content:""; position:absolute; width:28px; height:28px; border:3px solid #fff; opacity:.9;}
   .scanner-corners::before{ inset:auto auto 14% 8%; border-right:0; border-top:0; border-radius:0 0 0 10px;}
   .scanner-corners::after{ inset:14% 8% auto auto; border-left:0; border-bottom:0; border-radius:10px 0 0 0;}
   .scanner-text{ position:absolute; top:10%; width:100%; text-align:center; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.6); font-weight:700}
@@ -219,7 +211,6 @@
     </div>
     <div class="modal-body" style="grid-template-columns:1fr">
       <div class="scanner-wrap">
-        <!-- iOS: autoplay + muted + playsinline -->
         <video id="video" autoplay muted playsinline webkit-playsinline style="width:100%; border-radius:12px; background:#000"></video>
         <div class="scanner-overlay">
           <div class="scanner-text">Escanea el código de barras</div>
@@ -401,16 +392,13 @@ async function openScan(){
 
   scanModal.classList.add("active");
   try{
-    // 1) warmup rápido intentando trasera (necesario para iOS para revelar labels)
     const warmup = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact:'environment' } } })
       .catch(()=> navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } }))
       .catch(()=> navigator.mediaDevices.getUserMedia({ video:true }));
     if(warmup){ attachStream(warmup); currentStream=warmup; }
 
-    // 2) lista cámaras
     devices = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
 
-    // 3) elegir trasera o la recordada
     const saved = (()=>{ try{ return localStorage.getItem(CAM_KEY)||'' }catch{ return '' }})();
     let preferId = saved && devices.some(d=>d.deviceId===saved) ? saved : null;
     if(!preferId){
@@ -418,7 +406,6 @@ async function openScan(){
       preferId = back?.deviceId || (devices[devices.length-1]||devices[0])?.deviceId;
     }
 
-    // 4) arrancar explícito por deviceId
     await startCameraByDeviceId(preferId);
     await startDecoding();
   }catch(err){
@@ -435,7 +422,6 @@ function attachStream(stream){
   videoEl.muted=true;
   videoEl.srcObject=stream;
   videoEl.play?.();
-  // preparar ImageCapture para torch (si existe)
   try{
     const track=stream.getVideoTracks()[0];
     imageCapture = ('ImageCapture' in window) ? new ImageCapture(track) : null;
@@ -454,31 +440,24 @@ async function startCameraByDeviceId(deviceId){
   torchOn=false; torchBtn.textContent="Linterna";
 }
 
-let stopDetector=null, decodingWithZXing=false;
+let stopDetector=null;
 async function startDecoding(){
-  // Prioridad: BarcodeDetector nativo
   if('BarcodeDetector' in window){
     const formats = ['ean_13','isbn_13','ean_8','upc_a','code_128'];
-    let detector;
-    try{ detector = new BarcodeDetector({ formats }); }catch{ detector = new BarcodeDetector(); }
-
-    let running=true;
-    stopDetector=()=>{ running=false; };
-    decodingWithZXing=false;
+    let detector; try{ detector=new BarcodeDetector({formats}); }catch{ detector=new BarcodeDetector(); }
+    let running=true; stopDetector=()=>{ running=false; };
 
     const loop = async ()=>{
       if(!running) return;
       try{
-        const barcodes = await detector.detect(videoEl);
-        if(barcodes && barcodes.length){
-          const txt = (barcodes[0].rawValue||"").replace(/[^0-9Xx]/g,"");
-          if(isValidIsbn13(txt)){
-            await onIsbnDetected(txt); return;
-          }
+        const codes = await detector.detect(videoEl);
+        if(codes && codes.length){
+          const raw = (codes[0].rawValue||"");
+          const isbn = normalizeIsbnCandidate(raw);
+          if(isbn){ await onIsbnDetected(isbn); return; }
         }
       }catch(e){
-        // Si el detector falla repetidamente, cae a ZXing
-        console.warn('BarcodeDetector error -> fallback ZXing', e);
+        console.warn('BarcodeDetector falló, se usará ZXing', e);
         running=false; await startZXing(); return;
       }
       requestAnimationFrame(loop);
@@ -492,29 +471,31 @@ async function startDecoding(){
 async function startZXing(){
   if(!codeReader){
     const hints = new Map();
-    // Limitar a formatos de barras típicos de ISBN para mejorar performance
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.ISBN, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A]);
     codeReader = new ZXing.BrowserMultiFormatReader(hints);
   }
   try{ codeReader.reset(); }catch{}
-  decodingWithZXing=true;
   await codeReader.decodeFromVideoElementContinuously(videoEl, async (result, err)=>{
     if(result){
-      const isbnRaw=String(result.getText()||'').replace(/[^0-9Xx]/g,'');
-      if(isValidIsbn13(isbnRaw)){ await onIsbnDetected(isbnRaw); }
+      const isbn = normalizeIsbnCandidate(String(result.getText()||""));
+      if(isbn){ await onIsbnDetected(isbn); }
     }
-    // NotFoundException => sin código; ignorar.
   });
 }
 
-function isValidIsbn13(s){
-  const v = (s||"").replace(/\D/g,"");
-  if(v.length!==13) return false;
-  if(!(v.startsWith("978") || v.startsWith("979"))) return false;
-  // checksum ISBN-13
+/* ===== Limpieza/validación de ISBN ===== */
+function normalizeIsbnCandidate(s){
+  // quita todo lo que no sea dígito y recorta a 13 (algunos EAN traen add-on 5 dígitos)
+  const digits = String(s||"").replace(/\D/g,"");
+  if(digits.length < 12) return null;
+  const v = digits.length>13 ? digits.slice(0,13) : digits;
+  if(!(v.startsWith("978")||v.startsWith("979"))) return null;
+  return isValidIsbn13(v) ? v : null;
+}
+function isValidIsbn13(v){
+  if(!/^\d{13}$/.test(v)) return false;
   let sum=0; for(let i=0;i<12;i++){ sum += (i%2?3:1)*Number(v[i]); }
-  const check = (10 - (sum%10))%10;
-  return check===Number(v[12]);
+  return ((10-(sum%10))%10) === Number(v[12]);
 }
 
 let handling=false;
@@ -542,33 +523,87 @@ function stopCamera(){
   try{ if(currentStream){ currentStream.getTracks().forEach(t=>t.stop()); currentStream=null; } videoEl.srcObject=null; videoEl.pause?.(); }catch{}
 }
 
-/* ===== Autorrellenar por ISBN ===== */
+/* ===== Autorrellenar por ISBN (mejorado) ===== */
 async function autorrellenarPorISBN(isbn){
   $("#isbn").value=isbn;
   const meta=await lookupByIsbn(isbn);
   if(meta){
     if(meta.title) $("#title").value=meta.title;
     if(meta.author) $("#author").value=meta.author;
+    if(meta.publisher || meta.year || meta.pages){
+      const extra = `Editorial: ${meta.publisher||"—"}${meta.year? " • Año: "+meta.year:""}${meta.pages? " • Páginas: "+meta.pages:""}`;
+      // no sobreescribe tus notas si ya hay algo
+      if(!$("#notes").value) $("#notes").value = extra;
+    }
     const cover=meta.cover||await fetchCover({title:meta.title,author:meta.author,isbn});
     $("#isbn").dataset.coverPreview=cover||"";
   }else{
     alert("No se encontraron datos para ese ISBN.");
   }
 }
+
+/* === Buscador robusto de OpenLibrary + Google Books === */
 async function lookupByIsbn(isbn){
+  const clean = (isbn||"").replace(/[^0-9Xx]/g,"");
+  if(!clean) return null;
+
+  // 1) OpenLibrary directo /isbn/{isbn}.json
   try{
-    const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
-    const j=await r.json(); const k=j[`ISBN:${isbn}`];
-    if(k){ return {title:k.title||"", author:k.authors?.[0]?.name||"", cover:k.cover?.large||""}; }
-  }catch{}
-  try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1`);
-    const j=await r.json(); const it=j.items?.[0];
-    if(it){
-      const vi=it.volumeInfo||{}; const img=vi.imageLinks||{};
-      return {title:vi.title||"", author:(vi.authors?.[0])||"", cover:(img.thumbnail||img.smallThumbnail||"").replace("http://","https://").replace("&edge=curl","")};
+    const r = await fetch(`https://openlibrary.org/isbn/${clean}.json`);
+    if(r.ok){
+      const d = await r.json();
+      // Autor por id si corresponde
+      let author="";
+      if(d.authors && d.authors[0]?.key){
+        try{
+          const ra = await fetch(`https://openlibrary.org${d.authors[0].key}.json`);
+          if(ra.ok){ const ja=await ra.json(); author=ja.name||""; }
+        }catch{}
+      }
+      return {
+        title: d.title||"",
+        author,
+        cover: `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
+        publisher: d.publishers?.[0]||"",
+        year: d.publish_date||"",
+        pages: d.number_of_pages||""
+      };
     }
   }catch{}
+
+  // 2) OpenLibrary API “books?bibkeys=…”
+  try{
+    const r=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${clean}&format=json&jscmd=data`);
+    const j=await r.json(); const k=j[`ISBN:${clean}`];
+    if(k){ 
+      return {
+        title:k.title||"",
+        author:k.authors?.[0]?.name||"",
+        cover:k.cover?.large||`https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
+        publisher:k.publishers?.[0]?.name||"",
+        year:k.publish_date||"",
+        pages:k.number_of_pages||""
+      }; 
+    }
+  }catch{}
+
+  // 3) Google Books
+  try{
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${clean}&maxResults=1&printType=books`);
+    const j=await r.json(); const it=j.items?.[0];
+    if(it){
+      const vi=it.volumeInfo||{}, img=vi.imageLinks||{};
+      return {
+        title: vi.title||"",
+        author: (vi.authors?.[0])||"",
+        cover: (img.thumbnail||img.smallThumbnail||"").replace("http://","https://"),
+        publisher: vi.publisher||"",
+        year: vi.publishedDate||"",
+        pages: vi.pageCount||""
+      };
+    }
+  }catch{}
+
   return null;
 }
 
